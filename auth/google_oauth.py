@@ -147,4 +147,4 @@ def revoke_credentials() -> None:
     """
     session.pop("google_token", None)
     session.pop("oauth_state", None)
-    session.pop("auramail_state", None)
+    session.pop("vocamail_state", None)
