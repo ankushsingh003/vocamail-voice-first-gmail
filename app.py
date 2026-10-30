@@ -80,7 +80,7 @@ def index():
         try:
             print_inbox_summary(creds)
         except Exception as e:
-            print(f"[AuraMail] Could not fetch inbox: {e}")
+            print(f"[VocaMail] Could not fetch inbox: {e}")
 
     return render_template("index.html", logged_in=logged_in)
 
