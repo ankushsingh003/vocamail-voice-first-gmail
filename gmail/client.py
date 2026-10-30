@@ -178,10 +178,10 @@ def print_inbox_summary(creds: Credentials) -> None:
     """
     messages = list_inbox(creds)
     if not messages:
-        print("[AuraMail] Inbox is empty or could not be reached.")
+        print("[VocaMail] Inbox is empty or could not be reached.")
         return
 
-    print(f"\n[AuraMail] Latest {len(messages)} inbox messages:\n")
+    print(f"\n[VocaMail] Latest {len(messages)} inbox messages:\n")
     for i, msg in enumerate(messages, start=1):
         unread_flag = "● " if msg["is_unread"] else "  "
         print(f"  {unread_flag}{i}. From: {msg['from']}")
