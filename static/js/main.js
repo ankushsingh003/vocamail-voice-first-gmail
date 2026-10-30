@@ -113,7 +113,7 @@ if (btnTestInbox) {
 
       setStatus("idle", "Ready");
     } catch (err) {
-      console.error("[AuraMail] Inbox fetch error:", err);
+      console.error("[VocaMail] Inbox fetch error:", err);
       if (inboxResults) {
         inboxResults.innerHTML = `<p class="email-error">Error: ${escapeHtml(err.message)}</p>`;
       }
