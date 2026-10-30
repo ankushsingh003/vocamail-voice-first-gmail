@@ -1,32 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
+<!--
+  templates/index.html — AuraMail Main User Interface
+  ===================================================
+  This is the single visual webpage for AuraMail.
+  It uses Jinja2 templating (Flask's built-in template engine) to show:
+    1. If you are LOGGED OUT -> The modern dark-mode Google sign-in card.
+    2. If you are LOGGED IN  -> The voice dashboard with the big microphone button!
+  
+  Accessibility First:
+  Every button and section has semantic HTML tags (<main>, <header>, <section>)
+  and ARIA attributes (role="status", aria-live="polite") so blind users and
+  screen readers have a 10/10 seamless experience.
+-->
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AuraMail — Voice-First Gmail</title>
   <meta name="description" content="AuraMail: a voice-first, screen-reader-friendly Gmail interface. Manage your inbox hands-free." />
+
+  <!-- Google Font: 'Inter' for clean, crisp, modern typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Custom Dark Mode Stylesheet -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
 <body>
 
-  <!-- ARIA live region — screen readers announce status changes here -->
+  <!-- =========================================================================
+       1. ARIA Live Region (Invisible Megaphone for Screen Readers)
+       =========================================================================
+       This <div> is visually hidden (.sr-only = screen reader only).
+       Whenever our JavaScript puts words into this div, the user's screen reader
+       immediately reads it aloud through their headphones.
+       'aria-live="polite"' means it will wait until the user pauses before speaking.
+  -->
   <div id="aria-status" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
 
+  <!-- Main container centered on the screen -->
   <main id="main-content">
 
+    <!-- =========================================================================
+         2. Screen A: Login Card (Shown when NOT logged in)
+         ========================================================================= -->
     {% if not logged_in %}
-    <!-- ── LOGIN SCREEN ─────────────────────────────────────────────────── -->
     <section class="login-screen" aria-labelledby="login-heading">
 
+      <!-- Glowing Brand Header -->
       <div class="brand">
         <div class="brand-icon" aria-hidden="true">✦</div>
         <h1 id="login-heading" class="brand-name">AuraMail</h1>
         <p class="brand-tagline">Voice-first Gmail. Eyes-free. Hands-free.</p>
       </div>
 
+      <!-- Glassmorphic Card Container -->
       <div class="login-card">
         <p class="login-description">
           Sign in with Google to manage your inbox entirely by voice.
@@ -34,11 +63,13 @@
           and search without touching the keyboard.
         </p>
 
+        <!-- The Google Sign-In Button: clicks over to /login to start OAuth -->
         <a id="btn-login"
            href="/login"
            class="btn btn-google"
            role="button"
            aria-label="Sign in with Google to use AuraMail">
+          <!-- Official multicolor Google 'G' icon -->
           <svg class="google-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -48,6 +79,7 @@
           Sign in with Google
         </a>
 
+        <!-- Privacy assurance -->
         <p class="login-note">
           AuraMail only requests permission to read, send, and manage
           your Gmail. We never store email content on our servers.
@@ -59,33 +91,38 @@
       </footer>
     </section>
 
+    <!-- =========================================================================
+         3. Screen B: Voice Dashboard (Shown when LOGGED IN)
+         ========================================================================= -->
     {% else %}
-    <!-- ── MAIN VOICE INTERFACE (Phase 2+) ──────────────────────────────── -->
     <section class="voice-screen" aria-labelledby="app-heading">
 
+      <!-- Top Header Bar with Brand and Sign Out Button -->
       <header class="app-header">
         <div class="brand-small">
           <span class="brand-icon-small" aria-hidden="true">✦</span>
           <span class="brand-name-small">AuraMail</span>
         </div>
+        <!-- Form that posts to /logout to clear credentials -->
         <form action="/logout" method="POST" style="margin:0">
           <button id="btn-logout" type="submit" class="btn btn-ghost"
                   aria-label="Sign out of AuraMail">Sign out</button>
         </form>
       </header>
 
+      <!-- Welcome Title & Keyboard Instructions -->
       <div class="voice-hero">
         <h1 id="app-heading" class="voice-title">Your inbox, by voice.</h1>
         <p class="voice-subtitle">Press <kbd>Space</kbd> or tap the button to start talking.</p>
       </div>
 
-      <!-- Status indicator -->
+      <!-- Glowing Status Light Badge (Ready, Listening, Processing, Speaking) -->
       <div id="status-indicator" class="status-badge status-idle" role="status" aria-label="Idle — ready to listen">
         <span class="status-dot" aria-hidden="true"></span>
         <span id="status-text">Ready</span>
       </div>
 
-      <!-- Big talk button -->
+      <!-- The Big Push-to-Talk Microphone Button -->
       <div class="talk-wrapper">
         <button id="btn-talk"
                 class="btn-talk"
@@ -96,7 +133,7 @@
         </button>
       </div>
 
-      <!-- Response text (also in ARIA region) -->
+      <!-- Spoken Assistant Bubble (Shows the spoken response on screen) -->
       <div class="response-box" id="response-box" aria-label="Assistant response">
         <p id="response-text" class="response-text">
           Signed in! Gmail access is active.
@@ -104,17 +141,18 @@
         </p>
       </div>
 
-      <!-- Phase-1 quick test panel -->
+      <!-- Phase 1 Quick Test Panel (Allows testing Gmail fetching without voice) -->
       <div class="test-panel">
         <h2 class="test-panel-title">Phase 1 — Gmail Test</h2>
         <button id="btn-test-inbox" class="btn btn-outline"
                 aria-label="Fetch and display your 5 latest emails">
           Fetch Latest Emails
         </button>
+        <!-- The list container where fetched emails appear -->
         <div id="inbox-results" class="inbox-list" aria-live="polite" aria-label="Email list"></div>
       </div>
 
-      <!-- Hidden audio player — Phase 2+ will use this -->
+      <!-- Hidden Audio Player for Speech Playback (Phase 2+) -->
       <audio id="tts-audio" aria-hidden="true"></audio>
 
     </section>
@@ -122,6 +160,7 @@
 
   </main>
 
+  <!-- Load our main JavaScript controls at the bottom of the page -->
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
