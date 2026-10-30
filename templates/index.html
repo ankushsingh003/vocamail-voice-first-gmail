@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <!--
-  templates/index.html — AuraMail Main User Interface
+  templates/index.html — VocaMail Main User Interface
   ===================================================
-  This is the single visual webpage for AuraMail.
+  This is the single visual webpage for VocaMail.
   It uses Jinja2 templating (Flask's built-in template engine) to show:
     1. If you are LOGGED OUT -> The modern dark-mode Google sign-in card.
     2. If you are LOGGED IN  -> The voice dashboard with the big microphone button!
@@ -16,8 +16,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AuraMail — Voice-First Gmail</title>
-  <meta name="description" content="AuraMail: a voice-first, screen-reader-friendly Gmail interface. Manage your inbox hands-free." />
+  <title>VocaMail — Voice-First Gmail</title>
+  <meta name="description" content="VocaMail: a voice-first, screen-reader-friendly Gmail interface. Manage your inbox hands-free." />
 
   <!-- Google Font: 'Inter' for clean, crisp, modern typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -51,7 +51,7 @@
       <!-- Glowing Brand Header -->
       <div class="brand">
         <div class="brand-icon" aria-hidden="true">✦</div>
-        <h1 id="login-heading" class="brand-name">AuraMail</h1>
+        <h1 id="login-heading" class="brand-name">VocaMail</h1>
         <p class="brand-tagline">Voice-first Gmail. Eyes-free. Hands-free.</p>
       </div>
 
@@ -59,7 +59,7 @@
       <div class="login-card">
         <p class="login-description">
           Sign in with Google to manage your inbox entirely by voice.
-          AuraMail reads your emails aloud and lets you compose, reply,
+          VocaMail reads your emails aloud and lets you compose, reply,
           and search without touching the keyboard.
         </p>
 
@@ -68,7 +68,7 @@
            href="/login"
            class="btn btn-google"
            role="button"
-           aria-label="Sign in with Google to use AuraMail">
+           aria-label="Sign in with Google to use VocaMail">
           <!-- Official multicolor Google 'G' icon -->
           <svg class="google-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -81,7 +81,7 @@
 
         <!-- Privacy assurance -->
         <p class="login-note">
-          AuraMail only requests permission to read, send, and manage
+          VocaMail only requests permission to read, send, and manage
           your Gmail. We never store email content on our servers.
         </p>
       </div>
@@ -101,12 +101,12 @@
       <header class="app-header">
         <div class="brand-small">
           <span class="brand-icon-small" aria-hidden="true">✦</span>
-          <span class="brand-name-small">AuraMail</span>
+          <span class="brand-name-small">VocaMail</span>
         </div>
         <!-- Form that posts to /logout to clear credentials -->
         <form action="/logout" method="POST" style="margin:0">
           <button id="btn-logout" type="submit" class="btn btn-ghost"
-                  aria-label="Sign out of AuraMail">Sign out</button>
+                  aria-label="Sign out of VocaMail">Sign out</button>
         </form>
       </header>
 
