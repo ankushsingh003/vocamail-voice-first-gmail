@@ -1,0 +1,40 @@
+# ── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Virtual environment ──────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+
+# ── Environment / secrets ────────────────────────────────────────────────────
+.env
+*.key
+*.pem
+
+# ── Temp files generated at runtime ─────────────────────────────────────────
+static/audio/*.mp3
+static/audio/*.wav
+tmp_audio.*
+
+# ── Flask / IDE ──────────────────────────────────────────────────────────────
+instance/
+.flask_session/
+*.sqlite3
+.DS_Store
+Thumbs.db
+
+# ── Editor ──────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*~
