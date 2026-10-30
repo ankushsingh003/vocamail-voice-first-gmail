@@ -8,7 +8,7 @@ Because you're talking in steps (e.g. Turn 1: "Write email" -> Turn 2: "To John"
 a few seconds ago. Without this memory, every time you pressed the mic button,
 it would have completely forgotten who you are and what you were doing!
 
-We store this notepad inside Flask's secure user session under the key "auramail_state".
+We store this notepad inside Flask's secure user session under the key "vocamail_state".
 """
 
 from flask import session
@@ -45,9 +45,9 @@ def get_state() -> dict:
     Grab the current notepad from memory.
     If the user just arrived for the first time, give them a fresh blank notepad.
     """
-    if "auramail_state" not in session:
-        session["auramail_state"] = _DEFAULT_STATE.copy()
-    return session["auramail_state"]
+    if "vocamail_state" not in session:
+        session["vocamail_state"] = _DEFAULT_STATE.copy()
+    return session["vocamail_state"]
 
 
 def set_state(state: dict) -> None:
@@ -55,7 +55,7 @@ def set_state(state: dict) -> None:
     Save the updated notepad back into Flask's session memory so it's
     preserved for the user's next voice turn.
     """
-    session["auramail_state"] = state
+    session["vocamail_state"] = state
 
 
 def reset_state() -> dict:
@@ -65,7 +65,7 @@ def reset_state() -> dict:
     """
     state = _DEFAULT_STATE.copy()
     state["draft"] = {"to": None, "subject": None, "body": None}
-    session["auramail_state"] = state
+    session["vocamail_state"] = state
     return state
 
 
