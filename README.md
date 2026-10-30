@@ -194,73 +194,7 @@ auramail/
                               └──────────┘
 ```
 
----
 
-## ▌Supported Voice Commands (MVP — 25+)
-
-```
-┌─────────────────┬──────────────────────────────────────────┬───────────────────┐
-│     Intent       │          Example Phrases                  │      Slots        │
-├─────────────────┼──────────────────────────────────────────┼───────────────────┤
-│ READ_INBOX      │  "check my inbox" · "any new mail"        │  —                │
-│ READ_MESSAGE    │  "open the first one" · "read message 2"  │  index            │
-│ NEXT            │  "next" · "next email"                    │  —                │
-│ PREVIOUS        │  "go back" · "previous"                   │  —                │
-│ READ_MORE       │  "read more" · "continue"                 │  —                │
-│ READ_AGAIN      │  "repeat" · "say that again"              │  —                │
-│ COMPOSE         │  "write a message" · "compose an email"   │  recipient (opt.) │
-│ REPLY           │  "reply to this" · "respond"              │  —                │
-│ FORWARD         │  "forward this" · "forward to John"       │  recipient (opt.) │
-│ SEARCH          │  "search for emails from Amazon"          │  sender / keyword │
-│ MARK_READ       │  "mark as read" · "mark it read"          │  —                │
-│ ARCHIVE         │  "archive this" · "archive it"            │  —                │
-│ DELETE          │  "delete this" · "trash it"               │  —                │
-│ STOP            │  "stop" · "never mind"                    │  —                │
-│ HELP            │  "what can I say" · "help"                │  —                │
-│ YES             │  "yes" · "confirm" · "send it"            │  —                │
-│ NO / CANCEL     │  "no" · "cancel" · "start over"           │  —                │
-│ UNREAD_COUNT    │  "how many unread" · "unread emails"       │  —                │
-│ NEWEST_FIRST    │  "newest first" · "sort by date"          │  —                │
-│ OPEN_THREAD     │  "open the thread" · "show replies"       │  —                │
-│ SPELL_ADDRESS   │  "spell the address" (compose helper)     │  —                │
-│ EDIT_DRAFT      │  "edit subject" · "change the body"       │  field            │
-│ LABEL           │  "label this as work"                     │  label name       │
-│ SNOOZE          │  "snooze this for tomorrow"               │  time (future)    │
-│ LOGOUT          │  "sign out" · "log out"                   │  —                │
-└─────────────────┴──────────────────────────────────────────┴───────────────────┘
-```
-
----
-
-## ▌Build Phases
-
-```
-  Phase 1          Phase 2          Phase 3          Phase 4          Phase 5
-┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
-│ PLUMBING │────▶│ VOICE IN │────▶│ VOICE OUT│────▶│ INTENTS  │────▶│ COMPOSE  │
-│          │     │          │     │          │     │          │     │          │
-│ ✅ Flask  │     │ Browser  │     │ gTTS     │     │READ_INBOX│     │ Multi-   │
-│ ✅ OAuth  │     │ records  │     │ mp3      │     │READ_MSG  │     │ turn     │
-│ ✅ Gmail  │     │ Whisper  │     │ playback │     │ NEXT     │     │ state    │
-│ ✅ list() │     │ transcript│    │ ARIA     │     │ HELP     │     │ machine  │
-│ ✅ UI     │     │ on screen│     │ live rgn │     │          │     │ + send   │
-└──────────┘     └──────────┘     └──────────┘     └──────────┘     └──────────┘
-
-  Phase 6          Phase 7          Phase 8
-┌──────────┐     ┌──────────┐     ┌──────────┐
-│ ACTIONS  │────▶│  A11Y    │────▶│ POLISH   │
-│          │     │  AUDIT   │     │          │
-│ Reply    │     │ NVDA /   │     │ Errors   │
-│ Search   │     │ VoiceOver│     │ Repeat   │
-│ Archive  │     │ Lighthouse│    │ Timeouts │
-│ Delete   │     │ axe      │     │ README   │
-│ Mark read│     │ WCAG 2.1 │     │ Demo vid │
-└──────────┘     └──────────┘     └──────────┘
-
-  ████████░░░░░░░░░░░░░░░░░░░░░░░░  Phase 1 of 8 Complete
-```
-
----
 
 ## ▌Getting Started
 
