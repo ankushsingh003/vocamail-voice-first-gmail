@@ -27,7 +27,7 @@ import config
 # ---------------------------------------------------------------------------
 # This prepares the official Google library with our App's ID, Secret, and Redirect URL.
 # It makes sure both Google and our Flask app are speaking the same security protocol.
-def _build_flow() -> Flow:
+def _build_flow(state: str | None = None) -> Flow:
     """Create an OAuth Flow object configured with our app credentials."""
     client_config = {
         "web": {
@@ -42,6 +42,7 @@ def _build_flow() -> Flow:
         client_config,
         scopes=config.GMAIL_SCOPES,
         redirect_uri=config.OAUTH_REDIRECT_URI,
+        state=state,
     )
     return flow
 
@@ -82,7 +83,8 @@ def exchange_code(request_url: str) -> dict:
     """
     Swaps Google's temporary authorization code for real access and refresh tokens.
     """
-    flow = _build_flow()
+    state = session.get("oauth_state")
+    flow = _build_flow(state=state)
     flow.fetch_token(authorization_response=request_url)
 
     creds = flow.credentials
