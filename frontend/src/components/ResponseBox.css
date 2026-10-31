@@ -1,0 +1,23 @@
+/* ===========================================================================
+   frontend/src/components/ResponseBox.css — Spoken Assistant Bubble Styling
+   ===========================================================================
+   Styles the speech bubble where the assistant's replies and transcripts appear.
+   =========================================================================== */
+
+.response-box {
+  width: 100%;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--r-md);
+  padding: var(--sp-md) var(--sp-lg);
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.response-text {
+  color: var(--text-secondary);
+  line-height: 1.7;
+  font-size: 0.95rem;
+}
