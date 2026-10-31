@@ -27,7 +27,7 @@ import config
 # ---------------------------------------------------------------------------
 # This prepares the official Google library with our App's ID, Secret, and Redirect URL.
 # It makes sure both Google and our Flask app are speaking the same security protocol.
-def _build_flow(state: str | None = None, code_verifier: str | None = None) -> Flow:
+def _build_flow(state: str | None = None) -> Flow:
     """Create an OAuth Flow object configured with our app credentials."""
     client_config = {
         "web": {
@@ -38,12 +38,14 @@ def _build_flow(state: str | None = None, code_verifier: str | None = None) -> F
             "redirect_uris": [config.OAUTH_REDIRECT_URI],
         }
     }
+    # autogenerate_code_verifier=False ensures standard Web App client-secret authentication
+    # without brittle PKCE session code_verifier loss across browser tabs.
     flow = Flow.from_client_config(
         client_config,
         scopes=config.GMAIL_SCOPES,
         redirect_uri=config.OAUTH_REDIRECT_URI,
         state=state,
-        code_verifier=code_verifier,
+        autogenerate_code_verifier=False,
     )
     return flow
 
@@ -69,7 +71,6 @@ def build_auth_url() -> str:
         prompt="consent",           # ensures Google issues a refresh token
     )
     session["oauth_state"] = state   # remember this code to verify when Google returns
-    session["code_verifier"] = flow.code_verifier  # PKCE code verifier required by Google OAuth
     return auth_url
 
 
@@ -86,10 +87,8 @@ def exchange_code(request_url: str) -> dict:
     Swaps Google's temporary authorization code for real access and refresh tokens.
     """
     state = session.get("oauth_state")
-    code_verifier = session.get("code_verifier")
-    flow = _build_flow(state=state, code_verifier=code_verifier)
+    flow = _build_flow(state=state)
     flow.fetch_token(authorization_response=request_url)
-    session.pop("code_verifier", None)
 
     creds = flow.credentials
     token_data = {
