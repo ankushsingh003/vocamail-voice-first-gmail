@@ -18,6 +18,7 @@ The main jobs this file manages:
 """
 
 import os
+import uuid
 from flask import (
     Flask, redirect, request, session,
     jsonify, render_template, url_for
@@ -27,6 +28,7 @@ import config
 from auth.google_oauth import build_auth_url, exchange_code, get_credentials, revoke_credentials
 from core.state import get_state, reset_state
 from gmail.client import list_inbox, print_inbox_summary
+from speech.transcribe import transcribe_audio
 
 
 # ---------------------------------------------------------------------------
@@ -177,22 +179,50 @@ def api_inbox():
 # ---------------------------------------------------------------------------
 # 9. The Core Voice Pipeline (POST /api/voice)
 # ---------------------------------------------------------------------------
-# This will be the main voice highway in Phase 2+:
-# 1. Takes the recorded voice audio from the browser microphone.
-# 2. Hands it to Whisper to turn it into text.
-# 3. Figure out what the user wants ("read inbox", "send email").
-# 4. Talks to Gmail if needed.
-# 5. Converts the answer to spoken audio using gTTS.
-# 6. Returns the text and audio URL to the browser to play out loud!
+# This is the main voice highway — the heart of VocaMail:
+# 1. The browser sends the recorded voice audio as a file upload.
+# 2. We save it temporarily to disk (in the AUDIO_TEMP_DIR folder).
+# 3. Whisper AI listens to it and converts speech → text (the "transcript").
+# 4. We figure out what the user wants from that text (future: intent detection).
+# 5. We return the transcript to the React frontend so it can show it on screen.
+# (Talking back via gTTS will be added in Phase 3!)
 @app.route("/api/voice", methods=["POST"])
 @login_required
 def api_voice():
-    """The central endpoint for speech audio in -> spoken response out."""
+    """The central endpoint for speech audio in → spoken response out."""
+
+    # ---- 1. Check that an audio file was actually sent ----
+    # The browser sends the recording inside a form field named "audio".
+    # If it's missing or empty, we bail early with a friendly error.
+    if "audio" not in request.files or request.files["audio"].filename == "":
+        return jsonify({"ok": False, "error": "No audio file received."}), 400
+
+    audio_file = request.files["audio"]
+
+    # ---- 2. Save the audio blob to a temporary file on disk ----
+    # Whisper needs a real file path — it can't read a raw bytes stream directly.
+    # We give the file a unique name using uuid4 so two users don't overwrite each other.
+    ext = ".webm"   # Chrome records in WebM format by default
+    temp_filename = f"voice_{uuid.uuid4().hex}{ext}"
+    temp_path = os.path.join(config.AUDIO_TEMP_DIR, temp_filename)
+    audio_file.save(temp_path)
+
+    # ---- 3. Run Whisper — turn the voice recording into text ----
+    # transcribe_audio() automatically deletes the temp file after transcription
+    # so your private voice recording never lingers on disk.
+    try:
+        transcript = transcribe_audio(temp_path)
+    except Exception as e:
+        # If Whisper crashes (e.g. bad audio format), report cleanly
+        return jsonify({"ok": False, "error": f"Transcription failed: {e}"}), 500
+
+    # ---- 4. Return the transcript to the React frontend ----
+    # The frontend will display the transcript and read it aloud (Phase 3: TTS).
     return jsonify({
-        "ok":         True,
-        "transcript": "(voice pipeline coming in Phase 2)",
-        "text":       "Voice pipeline coming in Phase 2.",
-        "audio_url":  None,
+        "ok":        True,
+        "transcript": transcript,
+        "text":       transcript,      # Phase 3 will replace this with the assistant's spoken reply
+        "audio_url":  None,            # Phase 3 will put a gTTS audio file URL here
         "state":      get_state(),
     })
 
