@@ -19,6 +19,7 @@ The main jobs this file manages:
 
 import os
 import uuid
+import logging
 from flask import (
     Flask, redirect, request, session,
     jsonify, render_template, url_for
@@ -29,6 +30,7 @@ from auth.google_oauth import build_auth_url, exchange_code, get_credentials, re
 from core.state import get_state, reset_state
 from gmail.client import list_inbox, print_inbox_summary
 from speech.transcribe import transcribe_audio
+from speech.tts import speak, cleanup_old_audio
 
 
 # ---------------------------------------------------------------------------
@@ -41,6 +43,9 @@ app.config.update(
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=False,
 )
+
+# Set up a logger so we can print helpful debug messages to the terminal
+logger = logging.getLogger(__name__)
 
 # Make sure the 'static/audio' directory exists so we have a place to save
 # temporary spoken .mp3 audio clips before playing them.
@@ -216,13 +221,26 @@ def api_voice():
         # If Whisper crashes (e.g. bad audio format), report cleanly
         return jsonify({"ok": False, "error": f"Transcription failed: {e}"}), 500
 
-    # ---- 4. Return the transcript to the React frontend ----
-    # The frontend will display the transcript and read it aloud (Phase 3: TTS).
+    # ---- 4. Generate a spoken audio reply using gTTS ----
+    # Right now the assistant simply reads back what you said ("echo" mode).
+    # In Phase 4, this will be replaced with Gmail actions and smart replies.
+    # cleanup_old_audio() quietly deletes MP3 files older than 10 minutes to save disk space.
+    cleanup_old_audio()
+    reply_text = f"You said: {transcript}"
+    try:
+        audio_url = speak(reply_text)
+    except Exception as e:
+        # TTS failure is non-fatal — we still return the transcript, just without audio
+        logger.warning(f"[VocaMail] TTS failed: {e}")
+        audio_url = None
+
+    # ---- 5. Return the transcript and audio URL to the React frontend ----
+    # The frontend will display the transcript AND auto-play the spoken audio file.
     return jsonify({
         "ok":        True,
         "transcript": transcript,
-        "text":       transcript,      # Phase 3 will replace this with the assistant's spoken reply
-        "audio_url":  None,            # Phase 3 will put a gTTS audio file URL here
+        "text":       reply_text,
+        "audio_url":  audio_url,   # e.g. "/static/audio/tts_abc123.mp3"
         "state":      get_state(),
     })
 
