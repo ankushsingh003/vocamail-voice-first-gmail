@@ -14,7 +14,13 @@ The main jobs this file manages:
   4. POST /logout         -> Logs you out and clears your data.
   5. GET  /api/session    -> Lets the webpage check if you are still logged in.
   6. GET  /api/inbox      -> Test endpoint: pulls 5 emails from Gmail and returns them as JSON.
-  7. POST /api/voice      -> The main voice turn pipeline (Whisper + Gmail + Speech playback).
+  7. POST /api/voice      -> Full voice pipeline: Whisper → Intent → Gmail → gTTS reply.
+
+Phase 4 additions:
+  - detect_intent()  : figures out what the user asked for (read_inbox, read_email, help…)
+  - narrate_inbox()  : formats Gmail inbox as a spoken sentence
+  - narrate_email()  : reads one full email body aloud
+  - get_help_text()  : returns the list of voice commands as speech
 """
 
 import os
@@ -28,7 +34,9 @@ from flask import (
 import config
 from auth.google_oauth import build_auth_url, exchange_code, get_credentials, revoke_credentials
 from core.state import get_state, reset_state
+from core.intent import detect_intent
 from gmail.client import list_inbox, print_inbox_summary
+from gmail.reader import narrate_inbox, narrate_email, get_help_text
 from speech.transcribe import transcribe_audio
 from speech.tts import speak, cleanup_old_audio
 
@@ -184,61 +192,119 @@ def api_inbox():
 # ---------------------------------------------------------------------------
 # 9. The Core Voice Pipeline (POST /api/voice)
 # ---------------------------------------------------------------------------
-# This is the main voice highway — the heart of VocaMail:
-# 1. The browser sends the recorded voice audio as a file upload.
-# 2. We save it temporarily to disk (in the AUDIO_TEMP_DIR folder).
-# 3. Whisper AI listens to it and converts speech → text (the "transcript").
-# 4. We figure out what the user wants from that text (future: intent detection).
-# 5. We return the transcript to the React frontend so it can show it on screen.
-# (Talking back via gTTS will be added in Phase 3!)
+# This is the full voice highway — the heart of VocaMail:
+#
+#  Step 1: Browser sends recorded audio → we save to a temp file on disk
+#  Step 2: Whisper AI converts the audio → plain English text (transcript)
+#  Step 3: Intent detector reads the transcript → figures out what the user wants
+#            e.g. "read my inbox" → intent: read_inbox
+#            e.g. "read email 2"  → intent: read_email, params: {email_index: 1}
+#  Step 4: We perform the correct Gmail action and build a spoken reply string
+#  Step 5: gTTS converts the reply string → MP3 audio file
+#  Step 6: Return transcript + reply text + audio URL to React
+#            → React displays text and auto-plays the spoken audio
 @app.route("/api/voice", methods=["POST"])
 @login_required
 def api_voice():
-    """The central endpoint for speech audio in → spoken response out."""
+    """Full voice pipeline: audio in → Whisper → intent → Gmail action → gTTS audio out."""
 
     # ---- 1. Check that an audio file was actually sent ----
     # The browser sends the recording inside a form field named "audio".
-    # If it's missing or empty, we bail early with a friendly error.
     if "audio" not in request.files or request.files["audio"].filename == "":
         return jsonify({"ok": False, "error": "No audio file received."}), 400
 
     audio_file = request.files["audio"]
 
-    # ---- 2. Save the audio blob to a temporary file on disk ----
-    # Whisper needs a real file path — it can't read a raw bytes stream directly.
-    # We give the file a unique name using uuid4 so two users don't overwrite each other.
-    ext = ".webm"   # Chrome records in WebM format by default
+    # ---- 2. Save the audio blob to a temp file on disk ----
+    # Whisper needs a real file path — it cannot read a raw bytes stream.
+    # We give each file a unique name so concurrent users don't overwrite each other.
+    ext = ".webm"   # Chrome & Edge record in WebM format by default
     temp_filename = f"voice_{uuid.uuid4().hex}{ext}"
     temp_path = os.path.join(config.AUDIO_TEMP_DIR, temp_filename)
     audio_file.save(temp_path)
 
-    # ---- 3. Run Whisper — turn the voice recording into text ----
+    # ---- 3. Whisper: audio → text ----
     # transcribe_audio() automatically deletes the temp file after transcription
     # so your private voice recording never lingers on disk.
     try:
         transcript = transcribe_audio(temp_path)
     except Exception as e:
-        # If Whisper crashes (e.g. bad audio format), report cleanly
         return jsonify({"ok": False, "error": f"Transcription failed: {e}"}), 500
 
-    # ---- 4. Generate a spoken audio reply using gTTS ----
-    # Right now the assistant simply reads back what you said ("echo" mode).
-    # In Phase 4, this will be replaced with Gmail actions and smart replies.
-    # cleanup_old_audio() quietly deletes MP3 files older than 10 minutes to save disk space.
+    logger.info(f"[VocaMail] Transcript: '{transcript}'")
+
+    # ---- 4. Intent detection: what did the user ask for? ----
+    # detect_intent() uses fuzzy matching to map the transcript to one of our
+    # known command categories: read_inbox, read_email, compose, logout, help, unknown.
+    intent_result = detect_intent(transcript)
+    intent        = intent_result["intent"]
+    params        = intent_result["params"]
+
+    logger.info(f"[VocaMail] Intent: {intent} | Params: {params}")
+
+    # ---- 5. Perform the Gmail action and build the spoken reply ----
+    creds = get_credentials()
+
+    if intent == "read_inbox":
+        # User said something like "read my inbox" or "check emails"
+        # Fetch latest emails and narrate them as a sentence
+        reply_text = narrate_inbox(creds)
+
+    elif intent == "read_email":
+        # User said something like "read email 2" or "open the third message"
+        email_index = params.get("email_index", 0)
+        reply_text  = narrate_email(creds, email_index)
+
+    elif intent == "help":
+        # User said "help" or "what can you do"
+        reply_text = get_help_text()
+
+    elif intent == "logout":
+        # User said "log out" or "sign out"
+        # We don't actually log out here (that needs a POST /logout from the frontend)
+        # but we tell them how to do it
+        reply_text = (
+            "To sign out, click the Sign Out button at the top of the screen, "
+            "or say log out and then confirm."
+        )
+
+    elif intent == "compose":
+        # Compose is a future feature — acknowledge it gracefully
+        recipient  = params.get("recipient", "")
+        if recipient:
+            reply_text = (
+                f"Composing an email to {recipient} is coming soon. "
+                "For now, you can read your inbox or open a specific email."
+            )
+        else:
+            reply_text = (
+                "Email composing is coming soon. "
+                "You can say 'read my inbox' or 'read email 1' to get started."
+            )
+
+    else:
+        # Unknown intent — didn't understand the command
+        reply_text = (
+            f"I heard you say: {transcript}. "
+            "I'm not sure what you'd like me to do. "
+            "Try saying 'read my inbox', 'read email 1', or 'help' for a list of commands."
+        )
+
+    # ---- 6. gTTS: reply text → spoken MP3 audio file ----
+    # cleanup_old_audio() quietly deletes MP3 files older than 10 minutes to save space.
     cleanup_old_audio()
-    reply_text = f"You said: {transcript}"
     try:
         audio_url = speak(reply_text)
     except Exception as e:
-        # TTS failure is non-fatal — we still return the transcript, just without audio
+        # TTS failure is non-fatal — frontend still shows the text reply
         logger.warning(f"[VocaMail] TTS failed: {e}")
         audio_url = None
 
-    # ---- 5. Return the transcript and audio URL to the React frontend ----
-    # The frontend will display the transcript AND auto-play the spoken audio file.
+    # ---- 7. Return everything to the React frontend ----
     return jsonify({
-        "ok":        True,
+        "ok":         True,
         "transcript": transcript,
+        "intent":     intent,
         "text":       reply_text,
         "audio_url":  audio_url,   # e.g. "/static/audio/tts_abc123.mp3"
         "state":      get_state(),
