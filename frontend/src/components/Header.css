@@ -1,0 +1,57 @@
+/* ===========================================================================
+   frontend/src/components/Header.css — App Top Navigation Styling
+   ===========================================================================
+   Styles the top navigation bar of VocaMail, featuring the compact glowing
+   logo on the left and the minimalist "Sign out" button on the right.
+   =========================================================================== */
+
+.app-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--sp-sm) 0;
+  margin-bottom: var(--sp-md);
+}
+
+.brand-small {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xs);
+  text-decoration: none;
+}
+
+.brand-icon-small {
+  color: var(--accent-light);
+  font-size: 1.2rem;
+  filter: drop-shadow(0 0 8px var(--accent-glow));
+}
+
+.brand-name-small {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #f1f0ff, var(--accent-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Minimalist pill ghost button for Sign Out */
+.btn-ghost {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--border-glass);
+  color: var(--text-secondary);
+  border-radius: var(--r-full);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), transform var(--transition);
+}
+
+.btn-ghost:hover {
+  background: var(--bg-glass-hover);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
