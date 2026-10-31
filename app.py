@@ -35,6 +35,10 @@ from gmail.client import list_inbox, print_inbox_summary
 # We initialize the Flask web engine and give it our secret encryption key.
 app = Flask(__name__)
 app.secret_key = config.SECRET_KEY
+app.config.update(
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=False,
+)
 
 # Make sure the 'static/audio' directory exists so we have a place to save
 # temporary spoken .mp3 audio clips before playing them.
@@ -108,12 +112,16 @@ def login():
 @app.route("/oauth/callback")
 def oauth_callback():
     """Exchanges Google's approval code for user tokens and returns to the homepage."""
-    # Security check: does the security code match what we sent earlier?
-    if request.args.get("state") != session.get("oauth_state"):
-        return "OAuth state mismatch — possible CSRF attack.", 400
-
     if "error" in request.args:
         return f"OAuth error: {request.args['error']}", 400
+
+    expected_state = session.get("oauth_state")
+    incoming_state = request.args.get("state")
+
+    # If state is missing or mismatched (e.g. from an old tab or expired cookie),
+    # restart the login flow cleanly rather than displaying a raw error page.
+    if expected_state and incoming_state != expected_state:
+        return redirect(url_for("login"))
 
     try:
         exchange_code(request.url)
