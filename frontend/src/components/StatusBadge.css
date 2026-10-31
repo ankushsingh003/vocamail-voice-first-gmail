@@ -1,0 +1,67 @@
+/* ===========================================================================
+   frontend/src/components/StatusBadge.css — LED Status Indicator Styling
+   ===========================================================================
+   Styles the glowing pill indicator that shows what the assistant is doing:
+     - Idle: Quiet grey LED dot
+     - Listening: Flashing red LED dot (mic recording)
+     - Processing: Amber spinning LED dot (Whisper/Gmail working)
+     - Speaking: Green glowing LED dot (assistant talking)
+   =========================================================================== */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-xs);
+  padding: 6px 16px;
+  border-radius: var(--r-full);
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: background var(--transition);
+}
+
+/* Idle Mode */
+.status-idle .status-dot {
+  background: var(--text-muted);
+}
+
+/* Listening Mode: Pulsing red dot */
+.status-listening .status-dot {
+  background: var(--error);
+  box-shadow: 0 0 10px var(--error);
+  animation: blink 1s ease-in-out infinite;
+}
+
+/* Processing Mode: Glowing amber spinner */
+.status-processing .status-dot {
+  background: var(--warning);
+  box-shadow: 0 0 10px var(--warning);
+  animation: spin-dot 1s linear infinite;
+}
+
+/* Speaking Mode: Blinking emerald dot */
+.status-speaking .status-dot {
+  background: var(--success);
+  box-shadow: 0 0 10px var(--success);
+  animation: blink 0.7s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes spin-dot {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
