@@ -12,6 +12,13 @@ This file handles the 4 steps of that conversation:
   2. exchange_code()      -> Takes the secret note Google sends back and trades it for badge keys.
   3. get_credentials()    -> Retrieves your active badge (and automatically gets a fresh one if it expired).
   4. revoke_credentials() -> Throws away the badge when you click "Sign Out".
+
+FIX NOTE (google-auth-oauthlib v1.2+):
+  Newer library versions auto-generate a PKCE code_verifier and attach it to the Flow object.
+  Because we build TWO separate Flow objects (one to get the URL, one to exchange the code),
+  the second Flow has no code_verifier, so Google rejects it with "Missing code verifier".
+  Solution: we grab the code_verifier from the FIRST Flow and save it in the Flask session,
+  then feed it back into the SECOND Flow so Google sees the same verifier both times.
 """
 
 import json
@@ -27,8 +34,15 @@ import config
 # ---------------------------------------------------------------------------
 # This prepares the official Google library with our App's ID, Secret, and Redirect URL.
 # It makes sure both Google and our Flask app are speaking the same security protocol.
-def _build_flow(state: str | None = None) -> Flow:
-    """Create an OAuth Flow object configured with our app credentials."""
+# Optional: if you pass a code_verifier saved from a previous step, we inject it
+# directly onto the flow so the library uses it instead of generating a new one.
+def _build_flow(state: str | None = None, code_verifier: str | None = None) -> Flow:
+    """Create an OAuth Flow object configured with our app credentials.
+
+    Args:
+        state: The CSRF state token from the initial auth URL (used during callback).
+        code_verifier: The PKCE verifier string saved from the first flow (used during callback).
+    """
     client_config = {
         "web": {
             "client_id":     config.GOOGLE_CLIENT_ID,
@@ -38,15 +52,24 @@ def _build_flow(state: str | None = None) -> Flow:
             "redirect_uris": [config.OAUTH_REDIRECT_URI],
         }
     }
-    # autogenerate_code_verifier=False ensures standard Web App client-secret authentication
-    # without brittle PKCE session code_verifier loss across browser tabs.
+
+    # Build the Flow — the library may auto-generate a code_verifier (PKCE)
     flow = Flow.from_client_config(
         client_config,
         scopes=config.GMAIL_SCOPES,
         redirect_uri=config.OAUTH_REDIRECT_URI,
         state=state,
-        autogenerate_code_verifier=False,
     )
+
+    # If the caller provided a code_verifier (from a previously saved session),
+    # inject it onto the underlying OAuth2 session so Google gets the right verifier.
+    # This bridges the gap between two separate Flow object lifetimes.
+    if code_verifier:
+        flow.code_verifier = code_verifier
+        # Also inject into the underlying requests-oauthlib session object
+        if hasattr(flow, "_oauth2session") and flow._oauth2session is not None:
+            flow._oauth2session._client.code_verifier = code_verifier
+
     return flow
 
 
@@ -60,17 +83,30 @@ def _build_flow(state: str | None = None) -> Flow:
 # - prompt="consent"      : Always asks for permission clearly.
 # - state                 : A randomized security code stored in Flask's session
 #   to prevent fake/hacked redirects (CSRF protection).
+# IMPORTANT: after building the URL, we grab whatever code_verifier the library
+# generated and save it in the session so exchange_code() can use it later.
 def build_auth_url() -> str:
     """
     Builds the web address where the user logs into Google and approves permissions.
+    Returns the full Google authorization URL string.
     """
     flow = _build_flow()
     auth_url, state = flow.authorization_url(
-        access_type="offline",      # ask for a refresh_token for background token renewal
+        access_type="offline",       # ask for a refresh_token for background token renewal
         include_granted_scopes="true",
-        prompt="consent",           # ensures Google issues a refresh token
+        prompt="consent",            # ensures Google issues a refresh token
     )
-    session["oauth_state"] = state   # remember this code to verify when Google returns
+
+    # Save the CSRF state token so we can verify it when Google returns
+    session["oauth_state"] = state
+
+    # ---- PKCE FIX ----
+    # If the library auto-generated a code_verifier (PKCE), save it in the session.
+    # We'll need it in exchange_code() to prove we are the same app that started the login.
+    code_verifier = getattr(flow, "code_verifier", None)
+    if code_verifier:
+        session["oauth_code_verifier"] = code_verifier
+
     return auth_url
 
 
@@ -85,9 +121,15 @@ def build_auth_url() -> str:
 def exchange_code(request_url: str) -> dict:
     """
     Swaps Google's temporary authorization code for real access and refresh tokens.
+
+    Uses the saved oauth_state and (if present) oauth_code_verifier from the session
+    to reconstruct the same Flow that generated the original authorization URL.
     """
-    state = session.get("oauth_state")
-    flow = _build_flow(state=state)
+    state         = session.get("oauth_state")
+    code_verifier = session.get("oauth_code_verifier")   # may be None for non-PKCE clients
+
+    # Rebuild the flow, passing the saved code_verifier so Google's PKCE check passes
+    flow = _build_flow(state=state, code_verifier=code_verifier)
     flow.fetch_token(authorization_response=request_url)
 
     creds = flow.credentials
@@ -152,5 +194,6 @@ def revoke_credentials() -> None:
     """
     session.pop("google_token", None)
     session.pop("oauth_state", None)
-    session.pop("code_verifier", None)
+    session.pop("oauth_code_verifier", None)   # clean up the PKCE verifier too
+    session.pop("code_verifier", None)          # legacy key — remove if present
     session.pop("vocamail_state", None)
