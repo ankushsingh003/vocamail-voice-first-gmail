@@ -3,6 +3,13 @@
    ===========================================================================
    Styles the large 160px circular microphone button with interactive
    radial glows, outer halo rings, and pressed feedback states.
+
+   Phase 5 accessibility additions:
+   - :focus-visible ring  : Bright purple outline visible when keyboard-navigating.
+                            Hidden during mouse clicks (:focus-visible only fires for
+                            keyboard navigation, not mouse clicks — perfect for a11y).
+   - .processing state    : Dimmed button + not-allowed cursor while Whisper is running,
+                            so the user knows their press has been registered already.
    =========================================================================== */
 
 .talk-wrapper {
@@ -30,6 +37,7 @@
   user-select: none;
 }
 
+/* Outer halo ring — purely decorative, hidden from screen readers */
 .btn-talk::before {
   content: '';
   position: absolute;
@@ -44,6 +52,19 @@
   box-shadow: 0 0 64px var(--accent-glow);
 }
 
+/* ---- Keyboard focus ring (Phase 5 a11y) ----
+   :focus-visible fires ONLY when navigating by keyboard (Tab key).
+   It does NOT fire when the button is clicked by a mouse, so sighted
+   mouse users never see an ugly outline while keyboard users get a
+   clear bright ring showing exactly where focus is.
+   The thick offset ring makes it extremely visible — critical for
+   low-vision users or those with cognitive disabilities. */
+.btn-talk:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 8px;
+  box-shadow: 0 0 0 6px rgba(124, 58, 237, 0.35), 0 0 64px var(--accent-glow);
+}
+
 /* Active or pressed state while recording */
 .btn-talk:active,
 .btn-talk.recording,
@@ -51,6 +72,17 @@
   transform: scale(0.97);
   background: radial-gradient(circle at 40% 35%, rgba(124, 58, 237, 0.6), rgba(124, 58, 237, 0.15));
   box-shadow: 0 0 80px rgba(124, 58, 237, 0.5);
+}
+
+/* ---- Processing state — Whisper is working, disable further input ----
+   The button becomes semi-transparent and shows a "not-allowed" cursor
+   so the user knows: "I've already sent your audio, please wait." */
+.btn-talk.processing,
+.btn-talk:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  pointer-events: none;
 }
 
 .mic-icon {
@@ -64,6 +96,21 @@
   color: var(--text-secondary);
   text-align: center;
   max-width: 100px;
+}
+
+/* Screen-reader only utility class —
+   visually hidden but announced by screen reader software.
+   Positioned off-screen rather than display:none so readers can find it. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Mobile responsiveness */
