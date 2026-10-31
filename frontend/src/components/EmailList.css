@@ -1,0 +1,104 @@
+/* ===========================================================================
+   frontend/src/components/EmailList.css — Inbox Message Cards & Test Panel
+   ===========================================================================
+   Styles the email list display. Unread emails feature an accented violet
+   border on the left so they stand out clearly.
+   =========================================================================== */
+
+.test-panel {
+  width: 100%;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--r-md);
+  padding: var(--sp-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-md);
+  margin-top: var(--sp-sm);
+}
+
+.test-panel-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Violet outline button */
+.btn-outline {
+  padding: 10px var(--sp-lg);
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent-light);
+  border-radius: var(--r-full);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: rgba(124, 58, 237, 0.12);
+  transform: translateY(-1px);
+}
+
+.btn-outline:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Email cards list */
+.inbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+}
+
+.email-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--r-sm);
+  padding: var(--sp-sm) var(--sp-md);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: fadeUp 0.3s ease both;
+}
+
+/* Unread email highlight */
+.email-item.unread {
+  border-left: 3px solid var(--accent-light);
+}
+
+.email-from {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.email-subject {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.email-snippet {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.email-loading {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: var(--sp-md);
+}
+
+.email-error {
+  color: var(--error);
+  font-size: 0.85rem;
+  padding: var(--sp-sm);
+}
