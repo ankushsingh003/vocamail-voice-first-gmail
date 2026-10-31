@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  frontend/index.html — React Application HTML Shell
+  ===================================================
+  This is the single HTML page that loads our entire React user interface.
+  React mounts the whole component tree into the `<div id="root"></div>` element.
+-->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VocaMail — Voice-First Gmail</title>
+  <meta name="description" content="VocaMail: a voice-first, screen-reader-friendly Gmail interface. Manage your inbox hands-free." />
+
+  <!-- Preload clean, modern Inter typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- The main container where React renders all components -->
+  <div id="root"></div>
+
+  <!-- Entry script that boots React -->
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>
