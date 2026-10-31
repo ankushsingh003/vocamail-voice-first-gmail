@@ -1,0 +1,114 @@
+/* ===========================================================================
+   frontend/src/components/LoginCard.css — Google Sign-In Screen Styling
+   ===========================================================================
+   Styles the initial welcome card displayed when a user has not logged in yet.
+   Features a glowing brand icon, frosted glass card, and the Google button.
+   =========================================================================== */
+
+.login-screen {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-xl);
+  animation: fadeUp 0.6s ease both;
+}
+
+/* Glowing brand block at the top */
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-sm);
+  text-align: center;
+}
+
+.brand-icon {
+  font-size: 3rem;
+  color: var(--accent-light);
+  filter: drop-shadow(0 0 16px var(--accent-glow));
+  animation: pulse 3s ease-in-out infinite;
+}
+
+.brand-name {
+  font-size: 2.8rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  background: linear-gradient(135deg, #f1f0ff 0%, var(--accent-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.brand-tagline {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* Frosted glass card */
+.login-card {
+  width: 100%;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--r-lg);
+  padding: var(--sp-xl);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.login-description {
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.7;
+  font-size: 0.95rem;
+}
+
+/* White Google Sign-In Pill Button */
+.btn-google {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  padding: 14px var(--sp-xl);
+  background: #ffffff;
+  color: #1f1f1f;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: var(--r-full);
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn-google:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+
+.btn-google:active {
+  transform: translateY(0);
+}
+
+.google-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.login-note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.6;
+}
+
+.login-footer {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
