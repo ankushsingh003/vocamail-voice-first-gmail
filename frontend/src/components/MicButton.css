@@ -1,0 +1,78 @@
+/* ===========================================================================
+   frontend/src/components/MicButton.css — Circular Push-to-Talk Button Styling
+   ===========================================================================
+   Styles the large 160px circular microphone button with interactive
+   radial glows, outer halo rings, and pressed feedback states.
+   =========================================================================== */
+
+.talk-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: var(--sp-lg) 0;
+}
+
+.btn-talk {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: radial-gradient(circle at 40% 35%, rgba(124, 58, 237, 0.3), rgba(124, 58, 237, 0.05));
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-sm);
+  transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+  box-shadow: 0 0 40px var(--accent-glow);
+  position: relative;
+  user-select: none;
+}
+
+.btn-talk::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px solid rgba(167, 139, 250, 0.15);
+  transition: transform var(--transition);
+}
+
+.btn-talk:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 64px var(--accent-glow);
+}
+
+/* Active or pressed state while recording */
+.btn-talk:active,
+.btn-talk.recording,
+.btn-talk[aria-pressed="true"] {
+  transform: scale(0.97);
+  background: radial-gradient(circle at 40% 35%, rgba(124, 58, 237, 0.6), rgba(124, 58, 237, 0.15));
+  box-shadow: 0 0 80px rgba(124, 58, 237, 0.5);
+}
+
+.mic-icon {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.btn-talk-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 100px;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+  .btn-talk {
+    width: 130px;
+    height: 130px;
+  }
+  .mic-icon {
+    font-size: 2rem;
+  }
+}
