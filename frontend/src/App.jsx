@@ -14,14 +14,11 @@
  *      - `<ResponseBox />` (Spoken assistant bubble + ARIA announcer)
  *      - `<EmailList />` (Inbox message cards)
  *
- * Phase 2 additions:
- *   - handleToggleRecord() is now wired to the real browser microphone via audioRecorder.js
- *   - startRecording() captures voice, stopRecording() returns the audio Blob
- *   - The Blob is sent to POST /api/voice → Whisper transcribes → transcript shown on screen
- *   - Mode transitions: idle → listening → processing → idle (drives StatusBadge + MicButton UI)
+ * Phase 2: mic capture → Whisper transcription → display transcript
+ * Phase 3: gTTS audio reply → hidden <audio> element auto-plays the spoken response
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Header from "./components/Header";
 import LoginCard from "./components/LoginCard";
 import StatusBadge from "./components/StatusBadge";
@@ -44,16 +41,22 @@ export default function App() {
   //   "idle"       = ready, waiting for user input
   //   "listening"  = mic is active, recording in progress
   //   "processing" = audio sent to Whisper, waiting for result
-  //   "speaking"   = (Phase 3) reading the response aloud
+  //   "speaking"   = gTTS audio is currently playing through the speakers
   const [mode, setMode] = useState("idle");
   const [isRecording, setIsRecording] = useState(false);
   const [message, setMessage] = useState(
     "Signed in! Gmail access is active. Say something or press Space to begin."
   );
 
+  // ---- Hidden <audio> element reference ----
+  // We use a React ref to point at the hidden <audio> tag in the JSX below.
+  // When Flask returns an audio_url (the gTTS MP3), we set it as the src
+  // and call .play() to make the browser speak the response aloud.
+  // This is the key accessibility feature: blind users HEAR the reply, not just see it.
+  const audioRef = useRef(null);
+
   // ---- Check login status on page mount ----
   // As soon as the page loads, we silently ping Flask to see if there is an active session.
-  // No need to ask the user to log in if they already did 5 minutes ago!
   useEffect(() => {
     async function checkAuth() {
       try {
@@ -76,9 +79,8 @@ export default function App() {
   }, []);
 
   // ---- Handler: Push-to-Talk mic button toggle ----
-  // This is the heart of the voice pipeline:
-  //   First press  → asks the browser for mic permission, plays start beep, starts recording
-  //   Second press → plays stop beep, sends audio to Whisper, displays transcript
+  // First press  → asks browser for mic permission, plays start beep, begins recording
+  // Second press → plays stop beep, sends audio to Whisper, gets reply, plays TTS audio
   async function handleToggleRecord() {
     if (isRecording) {
       // === STOP: finish recording and send to Flask ===
@@ -99,8 +101,6 @@ export default function App() {
         const res = await fetch("/api/voice", {
           method: "POST",
           body: formData,
-          // Note: do NOT set Content-Type header — the browser sets it automatically
-          // with the correct multipart boundary when using FormData
         });
 
         if (!res.ok) {
@@ -110,13 +110,32 @@ export default function App() {
 
         const data = await res.json();
 
-        // Show the transcript that Whisper returned
-        const transcript = data.transcript || "(No speech detected)";
-        setMessage(`You said: "${transcript}"`);
-        setMode("idle");
+        // Show the transcript text in the response bubble
+        const displayText = data.text || data.transcript || "(No speech detected)";
+        setMessage(displayText);
+
+        // ---- Phase 3: Play the gTTS spoken audio reply ----
+        // If Flask returned an audio_url (e.g. "/static/audio/tts_abc123.mp3"),
+        // load it into the hidden <audio> element and play it automatically.
+        // The browser will speak the reply out loud through the user's speakers.
+        if (data.audio_url && audioRef.current) {
+          setMode("speaking");
+          audioRef.current.src = data.audio_url;
+
+          // .play() returns a Promise — we wait for it to avoid browser autoplay errors
+          try {
+            await audioRef.current.play();
+          } catch (playErr) {
+            // Browser may block autoplay without user interaction — log but don't crash
+            console.warn("[VocaMail] Audio autoplay blocked:", playErr.message);
+          }
+          // The onEnded handler below will set mode back to "idle" when speech finishes
+        } else {
+          // No audio URL returned (TTS failed gracefully) — go back to idle
+          setMode("idle");
+        }
 
       } catch (err) {
-        // Something went wrong — show a friendly error message
         console.error("[VocaMail] Voice pipeline error:", err);
         setMessage(`Error: ${err.message}. Please try again.`);
         setMode("idle");
@@ -131,12 +150,18 @@ export default function App() {
         setMode("listening");
         setMessage("Listening… Speak your command now!");
       } catch (err) {
-        // User denied mic access or browser doesn't support it
         console.error("[VocaMail] Could not start recording:", err);
         setMessage(`Microphone error: ${err.message}`);
         setMode("idle");
       }
     }
+  }
+
+  // ---- When the spoken audio reply finishes playing ----
+  // The hidden <audio> element fires "ended" when the MP3 reaches the end.
+  // We switch back to idle mode so the user knows they can speak again.
+  function handleAudioEnded() {
+    setMode("idle");
   }
 
   // ---- Helper: let child components show messages in the response bubble ----
@@ -162,6 +187,19 @@ export default function App() {
 
   return (
     <main id="main-content">
+      {/*
+        Hidden <audio> element — the actual voice output speaker.
+        It has no visible controls because blind users don't need them:
+        playback starts automatically when gTTS returns a URL.
+        aria-hidden="true" keeps screen readers from announcing it separately.
+      */}
+      <audio
+        ref={audioRef}
+        onEnded={handleAudioEnded}
+        aria-hidden="true"
+        style={{ display: "none" }}
+      />
+
       {!isLoggedIn ? (
         // Screen A: Login Card
         <LoginCard />
@@ -198,3 +236,4 @@ export default function App() {
     </main>
   );
 }
+
