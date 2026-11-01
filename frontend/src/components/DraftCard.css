@@ -1,0 +1,120 @@
+/* ===========================================================================
+   frontend/src/components/DraftCard.css — Live Voice Email Draft Visualizer
+   ===========================================================================
+   When the user speaks "compose email", this glowing card appears on screen
+   and live-updates as they dictate the recipient, subject, and message.
+   =========================================================================== */
+
+.draft-card {
+  width: 100%;
+  max-width: 580px;
+  margin: var(--sp-md) auto;
+  background: rgba(26, 26, 46, 0.85);
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-lg);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  animation: draftSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes draftSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.draft-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--sp-md);
+  padding-bottom: var(--sp-sm);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.draft-title-group {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xs);
+}
+
+.draft-icon {
+  font-size: 1.25rem;
+}
+
+.draft-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.draft-step-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  background: rgba(124, 58, 237, 0.25);
+  color: #c4b5fd;
+  border: 1px solid rgba(124, 58, 237, 0.4);
+}
+
+.draft-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+}
+
+.draft-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.draft-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.draft-value {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.25);
+  padding: var(--sp-xs) var(--sp-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+.draft-value.empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.draft-value.body-text {
+  min-height: 56px;
+  align-items: flex-start;
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+.draft-hint {
+  margin-top: var(--sp-md);
+  margin-bottom: 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
