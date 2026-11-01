@@ -36,8 +36,13 @@ import config
 from auth.google_oauth import build_auth_url, exchange_code, get_credentials, revoke_credentials
 from core.state import get_state, set_state, reset_state
 from core.intent import detect_intent
-from gmail.client import list_inbox, print_inbox_summary, send_email
-from gmail.reader import narrate_inbox, narrate_email, get_help_text
+from gmail.client import (
+    list_inbox, print_inbox_summary, send_email,
+    search_messages, archive_message, trash_message, mark_as_read
+)
+from gmail.reader import (
+    narrate_inbox, narrate_email, get_help_text, narrate_search_results
+)
 from speech.transcribe import transcribe_audio
 from speech.tts import speak, cleanup_old_audio
 
@@ -354,6 +359,55 @@ def api_voice():
         elif intent == "read_email":
             email_index = params.get("email_index", 0)
             reply_text  = narrate_email(creds, email_index)
+
+        elif intent == "search":
+            query = params.get("query", "").strip()
+            reply_text = narrate_search_results(creds, query)
+
+        elif intent == "archive":
+            # Archive an email from the inbox
+            email_index = params.get("email_index", 0)
+            try:
+                emails = list_inbox(creds)
+                if 0 <= email_index < len(emails):
+                    target_email = emails[email_index]
+                    archive_message(creds, target_email["id"])
+                    reply_text = f"Archived email {email_index + 1}: '{target_email.get('subject')}'. It has been removed from your inbox."
+                else:
+                    reply_text = f"Cannot archive: there are only {len(emails)} emails in your inbox."
+            except Exception as e:
+                logger.error(f"[VocaMail] Archive error: {e}")
+                reply_text = f"Sorry, could not archive that email: {e}"
+
+        elif intent == "trash":
+            # Delete an email (move to trash)
+            email_index = params.get("email_index", 0)
+            try:
+                emails = list_inbox(creds)
+                if 0 <= email_index < len(emails):
+                    target_email = emails[email_index]
+                    trash_message(creds, target_email["id"])
+                    reply_text = f"Deleted email {email_index + 1}: '{target_email.get('subject')}'. Moved to Trash."
+                else:
+                    reply_text = f"Cannot delete: there are only {len(emails)} emails in your inbox."
+            except Exception as e:
+                logger.error(f"[VocaMail] Delete error: {e}")
+                reply_text = f"Sorry, could not delete that email: {e}"
+
+        elif intent == "mark_read":
+            # Mark an email as read
+            email_index = params.get("email_index", 0)
+            try:
+                emails = list_inbox(creds)
+                if 0 <= email_index < len(emails):
+                    target_email = emails[email_index]
+                    mark_as_read(creds, target_email["id"])
+                    reply_text = f"Marked email {email_index + 1}: '{target_email.get('subject')}' as read."
+                else:
+                    reply_text = f"Cannot mark as read: there are only {len(emails)} emails in your inbox."
+            except Exception as e:
+                logger.error(f"[VocaMail] Mark as read error: {e}")
+                reply_text = f"Sorry, could not mark that email as read: {e}"
 
         elif intent == "compose":
             # Start the multi-turn email compose wizard
