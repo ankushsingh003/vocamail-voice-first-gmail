@@ -58,7 +58,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    subgraph Frontend [React 18 + Vite Client (Port 5173)]
+    subgraph Frontend ["React 18 + Vite Client (Port 5173)"]
         APP["App.jsx · App.css"]
         MIC["MicButton.jsx · Spacebar Shortcut"]
         DRAFT["DraftCard.jsx · Live Email Notepad"]
@@ -67,19 +67,19 @@ flowchart TD
         REC["utils/audioRecorder.js · Web Audio Cues"]
     end
 
-    subgraph Server [Flask 3.0 API Server (Port 5000)]
+    subgraph Server ["Flask 3.0 API Server (Port 5000)"]
         API["app.py · Routes & Session Guard"]
         AUTH["auth/google_oauth.py · PKCE Safe OAuth 2.0"]
         STATE["core/state.py · Conversation Memory"]
         INTENT["core/intent.py · Fuzzy Phrase Matcher"]
     end
 
-    subgraph SpeechAI [Speech Pipeline]
+    subgraph SpeechAI ["Speech Pipeline"]
         WHISPER["speech/transcribe.py · Whisper Model Cache"]
         TTS["speech/tts.py · gTTS Audio Generator"]
     end
 
-    subgraph GoogleBackend [Google Workspace]
+    subgraph GoogleBackend ["Google Workspace"]
         GMAIL["gmail/client.py · Official Gmail v1 API"]
         READER["gmail/reader.py · Spoken Text Formatter"]
     end
