@@ -151,3 +151,4 @@ def get_help_text() -> str:
         "Say 'log out' to sign out of your Google account. "
         "Press Space or tap the microphone button to begin speaking."
     )
+
