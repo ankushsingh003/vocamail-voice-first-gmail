@@ -11,11 +11,16 @@
  *      - `<Header />` (Logo + Sign Out)
  *      - `<StatusBadge />` (Glowing LED status)
  *      - `<MicButton />` (Circular Talk button)
+ *      - `<DraftCard />` (Live voice email draft card when composing)
  *      - `<ResponseBox />` (Spoken assistant bubble + ARIA announcer)
  *      - `<EmailList />` (Inbox message cards)
  *
- * Phase 2: mic capture → Whisper transcription → display transcript
- * Phase 3: gTTS audio reply → hidden <audio> element auto-plays the spoken response
+ * Voice pipeline:
+ *   - Phase 2: mic capture → Whisper transcription
+ *   - Phase 3: gTTS audio reply auto-plays through hidden <audio> element
+ *   - Phase 4: Intent parsing ("read inbox", "read email 1", "help")
+ *   - Phase 5: Complete keyboard and ARIA screen reader accessibility
+ *   - Phase 6: Multi-turn email composition with live DraftCard visualizer
  */
 
 import React, { useState, useEffect, useRef } from "react";
@@ -23,10 +28,11 @@ import Header from "./components/Header";
 import LoginCard from "./components/LoginCard";
 import StatusBadge from "./components/StatusBadge";
 import MicButton from "./components/MicButton";
+import DraftCard from "./components/DraftCard";
 import ResponseBox from "./components/ResponseBox";
 import EmailList from "./components/EmailList";
 
-// Import the real microphone recorder we built in audioRecorder.js
+// Import the real microphone recorder from audioRecorder.js
 import { startRecording, stopRecording } from "./utils/audioRecorder";
 
 import "./App.css";
@@ -48,15 +54,21 @@ export default function App() {
     "Signed in! Gmail access is active. Say something or press Space to begin."
   );
 
+  // ---- Conversation memory state (from Flask core.state) ----
+  // Holds multi-turn information like whether we're composing an email,
+  // what question we're currently asking, and current draft fields.
+  const [vocamailState, setVocamailState] = useState({
+    mode: "idle",
+    compose_step: null,
+    draft: { to: null, subject: null, body: null },
+  });
+
   // ---- Hidden <audio> element reference ----
-  // We use a React ref to point at the hidden <audio> tag in the JSX below.
-  // When Flask returns an audio_url (the gTTS MP3), we set it as the src
-  // and call .play() to make the browser speak the response aloud.
-  // This is the key accessibility feature: blind users HEAR the reply, not just see it.
+  // When Flask returns an audio_url (the gTTS MP3), we load it and play it.
+  // This is the key accessibility feature: blind users hear the reply aloud!
   const audioRef = useRef(null);
 
   // ---- Check login status on page mount ----
-  // As soon as the page loads, we silently ping Flask to see if there is an active session.
   useEffect(() => {
     async function checkAuth() {
       try {
@@ -64,6 +76,9 @@ export default function App() {
         if (res.ok) {
           const data = await res.json();
           setIsLoggedIn(Boolean(data.logged_in));
+          if (data.state) {
+            setVocamailState(data.state);
+          }
         } else {
           setIsLoggedIn(false);
         }
@@ -79,8 +94,8 @@ export default function App() {
   }, []);
 
   // ---- Handler: Push-to-Talk mic button toggle ----
-  // First press  → asks browser for mic permission, plays start beep, begins recording
-  // Second press → plays stop beep, sends audio to Whisper, gets reply, plays TTS audio
+  // First press  → activates mic + plays start beep
+  // Second press → stops mic + plays stop beep + posts audio to Flask
   async function handleToggleRecord() {
     if (isRecording) {
       // === STOP: finish recording and send to Flask ===
@@ -90,7 +105,7 @@ export default function App() {
       setMessage("Processing… Whisper is listening to your voice.");
 
       try {
-        // stopRecording() returns a Promise that resolves to the raw audio Blob
+        // stopRecording() returns a Promise resolving to the audio Blob
         const audioBlob = await stopRecording();
 
         // Build a FormData payload — Flask reads it as request.files["audio"]
@@ -110,28 +125,26 @@ export default function App() {
 
         const data = await res.json();
 
-        // Show the transcript text in the response bubble
+        // Update conversation memory state (e.g. composing mode, draft values)
+        if (data.state) {
+          setVocamailState(data.state);
+        }
+
+        // Show the transcript / assistant response in the response bubble
         const displayText = data.text || data.transcript || "(No speech detected)";
         setMessage(displayText);
 
-        // ---- Phase 3: Play the gTTS spoken audio reply ----
-        // If Flask returned an audio_url (e.g. "/static/audio/tts_abc123.mp3"),
-        // load it into the hidden <audio> element and play it automatically.
-        // The browser will speak the reply out loud through the user's speakers.
+        // ---- Play the gTTS spoken audio reply ----
         if (data.audio_url && audioRef.current) {
           setMode("speaking");
           audioRef.current.src = data.audio_url;
 
-          // .play() returns a Promise — we wait for it to avoid browser autoplay errors
           try {
             await audioRef.current.play();
           } catch (playErr) {
-            // Browser may block autoplay without user interaction — log but don't crash
             console.warn("[VocaMail] Audio autoplay blocked:", playErr.message);
           }
-          // The onEnded handler below will set mode back to "idle" when speech finishes
         } else {
-          // No audio URL returned (TTS failed gracefully) — go back to idle
           setMode("idle");
         }
 
@@ -145,7 +158,7 @@ export default function App() {
       // === START: request microphone access and begin recording ===
 
       try {
-        await startRecording();   // plays start beep + activates mic
+        await startRecording();
         setIsRecording(true);
         setMode("listening");
         setMessage("Listening… Speak your command now!");
@@ -158,8 +171,6 @@ export default function App() {
   }
 
   // ---- When the spoken audio reply finishes playing ----
-  // The hidden <audio> element fires "ended" when the MP3 reaches the end.
-  // We switch back to idle mode so the user knows they can speak again.
   function handleAudioEnded() {
     setMode("idle");
   }
@@ -188,10 +199,8 @@ export default function App() {
   return (
     <main id="main-content">
       {/*
-        Hidden <audio> element — the actual voice output speaker.
-        It has no visible controls because blind users don't need them:
-        playback starts automatically when gTTS returns a URL.
-        aria-hidden="true" keeps screen readers from announcing it separately.
+        Hidden <audio> element — the voice output speaker.
+        Starts automatically when gTTS returns an audio URL.
       */}
       <audio
         ref={audioRef}
@@ -224,7 +233,16 @@ export default function App() {
           <MicButton
             isRecording={isRecording}
             onToggleRecord={handleToggleRecord}
+            mode={mode}
           />
+
+          {/* Live Email Draft Card (visible during multi-turn email compose) */}
+          {vocamailState.mode === "composing" && (
+            <DraftCard
+              draft={vocamailState.draft}
+              step={vocamailState.compose_step}
+            />
+          )}
 
           {/* Spoken Assistant Bubble + ARIA live region */}
           <ResponseBox message={message} />
@@ -236,4 +254,3 @@ export default function App() {
     </main>
   );
 }
-
