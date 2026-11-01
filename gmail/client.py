@@ -14,6 +14,7 @@ friendly sentences ready to be read aloud by our voice synthesizer!
 
 import base64
 import re
+from email.mime.text import MIMEText
 from typing import Optional
 
 from googleapiclient.discovery import build
@@ -188,3 +189,53 @@ def print_inbox_summary(creds: Credentials) -> None:
         print(f"       Subject: {msg['subject']}")
         print(f"       Preview: {msg['snippet'][:80]}")
         print()
+
+
+# ---------------------------------------------------------------------------
+# 7. Send an Email by Voice (send_email)
+# ---------------------------------------------------------------------------
+# Think of this like taking your dictated letter, putting it into a clean
+# addressed envelope, sealing it, and handing it directly to Google's postal truck!
+#
+# Parameters:
+#   creds   : Your active Google login credentials.
+#   to      : The destination email address (e.g. "friend@example.com").
+#   subject : The email title line.
+#   body    : The full spoken message you want delivered.
+#
+# How it works in plain English:
+#   1. MIMEText formats the message into standard Internet email format.
+#   2. base64.urlsafe_b64encode turns the message into a safe web string Google expects.
+#   3. The Gmail API sends the message instantly from your connected Gmail account.
+def send_email(creds: Credentials, to: str, subject: str, body: str) -> dict:
+    """
+    Sends an email from the user's Gmail account via the Gmail API.
+
+    Returns the API response dict containing the sent message ID.
+    Raises RuntimeError if sending fails.
+    """
+    if not to or not to.strip():
+        raise ValueError("Cannot send email: missing recipient address.")
+
+    service = _get_service(creds)
+
+    # 1. Prepare standard email envelope and content
+    message = MIMEText(body)
+    message["to"] = to.strip()
+    message["subject"] = subject.strip() if subject else "(no subject)"
+
+    # 2. Google's Gmail API requires the email to be encoded as a base64url string
+    raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
+
+    # 3. Post to Google's send endpoint
+    try:
+        sent_message = (
+            service.users()
+            .messages()
+            .send(userId="me", body={"raw": raw_message})
+            .execute()
+        )
+        return sent_message
+    except Exception as e:
+        raise RuntimeError(f"Failed to send email via Gmail API: {e}")
+
