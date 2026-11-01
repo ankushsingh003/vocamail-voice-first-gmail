@@ -24,6 +24,7 @@ Phase 4 additions:
 """
 
 import os
+import re
 import uuid
 import logging
 from flask import (
@@ -33,9 +34,9 @@ from flask import (
 
 import config
 from auth.google_oauth import build_auth_url, exchange_code, get_credentials, revoke_credentials
-from core.state import get_state, reset_state
+from core.state import get_state, set_state, reset_state
 from core.intent import detect_intent
-from gmail.client import list_inbox, print_inbox_summary
+from gmail.client import list_inbox, print_inbox_summary, send_email
 from gmail.reader import narrate_inbox, narrate_email, get_help_text
 from speech.transcribe import transcribe_audio
 from speech.tts import speak, cleanup_old_audio
@@ -190,42 +191,66 @@ def api_inbox():
 
 
 # ---------------------------------------------------------------------------
+# Helper: Spoken Email Address Cleaner (_normalize_spoken_email)
+# ---------------------------------------------------------------------------
+# When blind users dictate an email address by voice, speech recognition
+# might hear "john dot doe at gmail dot com" instead of "john.doe@gmail.com".
+# This helper converts spoken words ("at", "dot", "dash") into real email punctuation.
+def _normalize_spoken_email(text: str) -> str:
+    """Converts spoken email addresses into clean standard email strings."""
+    if not text:
+        return ""
+
+    # If the transcript already contains a valid email address, use it directly
+    match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", text)
+    if match:
+        return match.group(0).lower().strip()
+
+    # Convert spoken words to standard email symbols
+    cleaned = text.lower()
+    cleaned = re.sub(r"\bat\b", "@", cleaned)
+    cleaned = re.sub(r"\bdot\b", ".", cleaned)
+    cleaned = re.sub(r"\bunderscore\b", "_", cleaned)
+    cleaned = re.sub(r"\bdash\b", "-", cleaned)
+
+    # Remove all spaces between words/symbols (e.g. "john @ gmail . com" -> "john@gmail.com")
+    cleaned = re.sub(r"\s+", "", cleaned)
+    # Strip any trailing punctuation marks
+    cleaned = cleaned.strip(". ,;:!")
+    return cleaned
+
+
+# ---------------------------------------------------------------------------
 # 9. The Core Voice Pipeline (POST /api/voice)
 # ---------------------------------------------------------------------------
 # This is the full voice highway — the heart of VocaMail:
 #
 #  Step 1: Browser sends recorded audio → we save to a temp file on disk
 #  Step 2: Whisper AI converts the audio → plain English text (transcript)
-#  Step 3: Intent detector reads the transcript → figures out what the user wants
-#            e.g. "read my inbox" → intent: read_inbox
-#            e.g. "read email 2"  → intent: read_email, params: {email_index: 1}
-#  Step 4: We perform the correct Gmail action and build a spoken reply string
+#  Step 3: Check conversation state memory:
+#            - If user is in the middle of composing: handle the next step (recipient -> subject -> body -> confirm)
+#            - If idle: detect intent (read_inbox, compose, read_email, help, logout)
+#  Step 4: Perform the Gmail action and build a friendly spoken reply string
 #  Step 5: gTTS converts the reply string → MP3 audio file
-#  Step 6: Return transcript + reply text + audio URL to React
-#            → React displays text and auto-plays the spoken audio
+#  Step 6: Return transcript + reply text + audio URL + updated state to React
 @app.route("/api/voice", methods=["POST"])
 @login_required
 def api_voice():
-    """Full voice pipeline: audio in → Whisper → intent → Gmail action → gTTS audio out."""
+    """Full voice pipeline: audio in → Whisper → state machine / intent → Gmail action → gTTS audio out."""
 
     # ---- 1. Check that an audio file was actually sent ----
-    # The browser sends the recording inside a form field named "audio".
     if "audio" not in request.files or request.files["audio"].filename == "":
         return jsonify({"ok": False, "error": "No audio file received."}), 400
 
     audio_file = request.files["audio"]
 
     # ---- 2. Save the audio blob to a temp file on disk ----
-    # Whisper needs a real file path — it cannot read a raw bytes stream.
-    # We give each file a unique name so concurrent users don't overwrite each other.
     ext = ".webm"   # Chrome & Edge record in WebM format by default
     temp_filename = f"voice_{uuid.uuid4().hex}{ext}"
     temp_path = os.path.join(config.AUDIO_TEMP_DIR, temp_filename)
     audio_file.save(temp_path)
 
     # ---- 3. Whisper: audio → text ----
-    # transcribe_audio() automatically deletes the temp file after transcription
-    # so your private voice recording never lingers on disk.
     try:
         transcript = transcribe_audio(temp_path)
     except Exception as e:
@@ -233,80 +258,162 @@ def api_voice():
 
     logger.info(f"[VocaMail] Transcript: '{transcript}'")
 
-    # ---- 4. Intent detection: what did the user ask for? ----
-    # detect_intent() uses fuzzy matching to map the transcript to one of our
-    # known command categories: read_inbox, read_email, compose, logout, help, unknown.
+    # ---- 4. Check conversation memory & detect user command ----
+    state = get_state()
+    current_mode = state.get("mode", "idle")
+    compose_step = state.get("compose_step")
+    draft = state.get("draft", {"to": None, "subject": None, "body": None})
+
     intent_result = detect_intent(transcript)
     intent        = intent_result["intent"]
     params        = intent_result["params"]
 
-    logger.info(f"[VocaMail] Intent: {intent} | Params: {params}")
+    logger.info(f"[VocaMail] Mode: {current_mode} | Step: {compose_step} | Intent: {intent}")
 
-    # ---- 5. Perform the Gmail action and build the spoken reply ----
     creds = get_credentials()
+    reply_text = ""
 
-    if intent == "read_inbox":
-        # User said something like "read my inbox" or "check emails"
-        # Fetch latest emails and narrate them as a sentence
-        reply_text = narrate_inbox(creds)
+    # =======================================================================
+    # SCENARIO A: User is in the middle of COMPOSING an email (multi-turn)
+    # =======================================================================
+    if current_mode == "composing":
+        # Check if user wants to cancel the compose flow
+        if intent == "cancel" or transcript.lower().strip() in ["cancel", "stop", "abort", "nevermind"]:
+            reset_state()
+            reply_text = "Email cancelled. Draft discarded. Returning to main menu."
 
-    elif intent == "read_email":
-        # User said something like "read email 2" or "open the third message"
-        email_index = params.get("email_index", 0)
-        reply_text  = narrate_email(creds, email_index)
+        elif compose_step == "recipient":
+            # User just spoke the recipient's name or email address
+            recipient = _normalize_spoken_email(transcript)
+            draft["to"] = recipient
+            state["draft"] = draft
 
-    elif intent == "help":
-        # User said "help" or "what can you do"
-        reply_text = get_help_text()
+            if draft.get("subject"):
+                state["compose_step"] = "body"
+                reply_text = f"Recipient is {recipient}. Subject is '{draft['subject']}'. What would you like the body of the email to say?"
+            else:
+                state["compose_step"] = "subject"
+                reply_text = f"Recipient set to {recipient}. What is the subject of the email?"
 
-    elif intent == "logout":
-        # User said "log out" or "sign out"
-        # We don't actually log out here (that needs a POST /logout from the frontend)
-        # but we tell them how to do it
-        reply_text = (
-            "To sign out, click the Sign Out button at the top of the screen, "
-            "or say log out and then confirm."
-        )
+            set_state(state)
 
-    elif intent == "compose":
-        # Compose is a future feature — acknowledge it gracefully
-        recipient  = params.get("recipient", "")
-        if recipient:
+        elif compose_step == "subject":
+            # User just spoke the subject line
+            clean_subject = transcript.strip().rstrip(".")
+            draft["subject"] = clean_subject
+            state["draft"] = draft
+            state["compose_step"] = "body"
+            set_state(state)
+            reply_text = f"Subject set to '{clean_subject}'. What would you like the message body to say?"
+
+        elif compose_step == "body":
+            # User just spoke the body of the message
+            clean_body = transcript.strip()
+            draft["body"] = clean_body
+            state["draft"] = draft
+            state["compose_step"] = "confirm"
+            set_state(state)
             reply_text = (
-                f"Composing an email to {recipient} is coming soon. "
-                "For now, you can read your inbox or open a specific email."
+                f"Here is your email to {draft.get('to')}. "
+                f"Subject: {draft.get('subject')}. "
+                f"Message: {clean_body}. "
+                "Would you like to send this email now? Say yes to send, or say cancel."
             )
+
+        elif compose_step == "confirm":
+            # User is deciding whether to send or cancel
+            if intent == "confirm" or any(w in transcript.lower() for w in ["yes", "send", "confirm", "proceed"]):
+                to_addr = draft.get("to")
+                sub_txt = draft.get("subject", "(no subject)")
+                body_txt = draft.get("body", "")
+
+                try:
+                    send_email(creds, to=to_addr, subject=sub_txt, body=body_txt)
+                    reset_state()
+                    reply_text = f"Success! Your email to {to_addr} has been sent."
+                except Exception as e:
+                    logger.error(f"[VocaMail] Send email failed: {e}")
+                    reply_text = f"Sorry, sending the email failed: {e}. Say yes to retry, or cancel to abort."
+            else:
+                reply_text = (
+                    "I didn't catch that. Please say 'yes' or 'send' to deliver the email, "
+                    "or say 'cancel' to discard it."
+                )
+
+        else:
+            reset_state()
+            reply_text = "Something went wrong in the compose flow. Draft reset. How can I help you?"
+
+    # =======================================================================
+    # SCENARIO B: User is IDLE and speaking a fresh command
+    # =======================================================================
+    else:
+        if intent == "read_inbox":
+            reply_text = narrate_inbox(creds)
+
+        elif intent == "read_email":
+            email_index = params.get("email_index", 0)
+            reply_text  = narrate_email(creds, email_index)
+
+        elif intent == "compose":
+            # Start the multi-turn email compose wizard
+            recipient = params.get("recipient")
+            subject   = params.get("subject")
+            fresh_draft = {"to": None, "subject": None, "body": None}
+
+            state["mode"] = "composing"
+
+            if recipient:
+                fresh_draft["to"] = _normalize_spoken_email(recipient)
+                if subject:
+                    fresh_draft["subject"] = subject.strip().rstrip(".")
+                    state["compose_step"] = "body"
+                    reply_text = f"Composing email to {fresh_draft['to']} with subject '{fresh_draft['subject']}'. What would you like the message to say?"
+                else:
+                    state["compose_step"] = "subject"
+                    reply_text = f"Composing email to {fresh_draft['to']}. What is the subject of the email?"
+            else:
+                state["compose_step"] = "recipient"
+                reply_text = "Who would you like to email? You can speak an email address or a name."
+
+            state["draft"] = fresh_draft
+            set_state(state)
+
+        elif intent == "help":
+            reply_text = get_help_text()
+
+        elif intent == "logout":
+            reply_text = (
+                "To sign out, click the Sign Out button at the top of the screen, "
+                "or say log out and then confirm."
+            )
+
+        elif intent == "cancel":
+            reset_state()
+            reply_text = "Nothing to cancel. Ready for your command. Say 'help' to hear what I can do."
+
         else:
             reply_text = (
-                "Email composing is coming soon. "
-                "You can say 'read my inbox' or 'read email 1' to get started."
+                f"I heard you say: {transcript}. "
+                "I'm not sure what you'd like me to do. "
+                "Try saying 'read my inbox', 'compose email', 'read email 1', or 'help'."
             )
 
-    else:
-        # Unknown intent — didn't understand the command
-        reply_text = (
-            f"I heard you say: {transcript}. "
-            "I'm not sure what you'd like me to do. "
-            "Try saying 'read my inbox', 'read email 1', or 'help' for a list of commands."
-        )
-
-    # ---- 6. gTTS: reply text → spoken MP3 audio file ----
-    # cleanup_old_audio() quietly deletes MP3 files older than 10 minutes to save space.
+    # ---- 5. gTTS: reply text → spoken MP3 audio file ----
     cleanup_old_audio()
     try:
         audio_url = speak(reply_text)
     except Exception as e:
-        # TTS failure is non-fatal — frontend still shows the text reply
         logger.warning(f"[VocaMail] TTS failed: {e}")
         audio_url = None
 
-    # ---- 7. Return everything to the React frontend ----
+    # ---- 6. Return everything to the React frontend ----
     return jsonify({
         "ok":         True,
         "transcript": transcript,
         "intent":     intent,
         "text":       reply_text,
-        "audio_url":  audio_url,   # e.g. "/static/audio/tts_abc123.mp3"
+        "audio_url":  audio_url,
         "state":      get_state(),
     })
 
