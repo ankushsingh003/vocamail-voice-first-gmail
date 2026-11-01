@@ -113,6 +113,38 @@ INTENT_PHRASES = {
         "what do you support",
         "how do I use this",
     ],
+
+    # --- Confirmation (used during multi-turn email compose & actions) ---
+    "confirm": [
+        "yes",
+        "send",
+        "send it",
+        "confirm",
+        "looks good",
+        "go ahead",
+        "proceed",
+        "sure",
+        "ok",
+        "okay",
+        "yes send it",
+        "please send",
+        "send the email",
+    ],
+
+    # --- Cancellation (used to abort composing or stop the current flow) ---
+    "cancel": [
+        "no",
+        "cancel",
+        "stop",
+        "abort",
+        "don't send",
+        "do not send",
+        "nevermind",
+        "discard",
+        "quit",
+        "cancel email",
+        "no don't send",
+    ],
 }
 
 # Minimum similarity score (0–100) needed to accept a fuzzy match.
@@ -167,14 +199,28 @@ def _extract_params(intent: str, transcript: str) -> dict:
         params.setdefault("email_index", 0)
 
     elif intent == "compose":
-        # Try to extract a recipient: "email to John Smith" → "John Smith"
-        recipient_match = re.search(
-            r"(?:to|for)\s+([A-Za-z][A-Za-z\s]+?)(?:\s+about|\s+regarding|$)",
+        # 1. First check if there is an explicit email address: "email to test@example.com"
+        email_match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", transcript)
+        if email_match:
+            params["recipient"] = email_match.group(0).strip()
+        else:
+            # 2. Otherwise extract name after 'to' or 'for': "email to John Smith about lunch"
+            recipient_match = re.search(
+                r"(?:to|for)\s+([A-Za-z0-9\s\.]+?)(?:\s+about|\s+regarding|\s+subject|$)",
+                transcript,
+                re.IGNORECASE,
+            )
+            if recipient_match:
+                params["recipient"] = recipient_match.group(1).strip()
+
+        # 3. Check if subject was dictated in the same sentence: "about meeting tomorrow"
+        subject_match = re.search(
+            r"(?:about|regarding|with subject|subject)\s+(.+)$",
             transcript,
             re.IGNORECASE,
         )
-        if recipient_match:
-            params["recipient"] = recipient_match.group(1).strip()
+        if subject_match:
+            params["subject"] = subject_match.group(1).strip()
 
     return params
 
@@ -217,9 +263,19 @@ def detect_intent(transcript: str) -> dict:
     # Compare the transcript against every phrase in every intent category
     for intent_name, phrases in INTENT_PHRASES.items():
         for phrase in phrases:
-            # partial_ratio is great for short phrases inside longer sentences
-            # e.g. "read my inbox" inside "hey please read my inbox right now"
-            score = fuzz.partial_ratio(phrase.lower(), text.lower())
+            # For short 1-word phrases (like "yes", "no", "stop", "ok"), avoid partial substring
+            # false positives (e.g. "yesterday" matching "yes") by checking whole words or full ratio.
+            phrase_clean = phrase.lower().strip()
+            if len(phrase_clean.split()) == 1 and len(phrase_clean) <= 5:
+                tokens = re.findall(r"\b\w+\b", text.lower())
+                if phrase_clean in tokens:
+                    score = 100.0
+                else:
+                    score = fuzz.ratio(phrase_clean, text.lower())
+            else:
+                # partial_ratio is great for short phrases inside longer sentences
+                # e.g. "read my inbox" inside "hey please read my inbox right now"
+                score = fuzz.partial_ratio(phrase_clean, text.lower())
 
             if score > best_score:
                 best_score  = score
