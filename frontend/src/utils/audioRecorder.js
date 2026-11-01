@@ -176,3 +176,4 @@ export function stopRecording() {
 export function isRecording() {
   return _mediaRecorder !== null && _mediaRecorder.state === "recording";
 }
+
