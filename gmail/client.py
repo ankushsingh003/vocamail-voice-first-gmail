@@ -239,3 +239,138 @@ def send_email(creds: Credentials, to: str, subject: str, body: str) -> dict:
     except Exception as e:
         raise RuntimeError(f"Failed to send email via Gmail API: {e}")
 
+
+# ---------------------------------------------------------------------------
+# 8. Search Your Emails by Keyword (search_messages)
+# ---------------------------------------------------------------------------
+# When the user asks: "Find emails from Amazon" or "Search for receipt",
+# this function sends that search query to Gmail, finds matching emails,
+# and returns them as a clean list ready to be spoken aloud.
+def search_messages(creds: Credentials, query: str, max_results: int = 5) -> list[dict]:
+    """
+    Searches Gmail using any search query (sender, keyword, subject, etc.)
+    and returns a clean list of matching email dictionaries.
+    """
+    if not query or not query.strip():
+        return []
+
+    service = _get_service(creds)
+
+    try:
+        result = (
+            service.users()
+            .messages()
+            .list(userId="me", q=query.strip(), maxResults=max_results)
+            .execute()
+        )
+    except Exception as e:
+        raise RuntimeError(f"Gmail search failed: {e}")
+
+    messages_meta = result.get("messages", [])
+    if not messages_meta:
+        return []
+
+    matched = []
+    for meta in messages_meta:
+        try:
+            msg = (
+                service.users()
+                .messages()
+                .get(userId="me", id=meta["id"], format="full")
+                .execute()
+            )
+            headers   = msg.get("payload", {}).get("headers", [])
+            label_ids = msg.get("labelIds", [])
+            body_text = _decode_body(msg.get("payload", {}))
+
+            matched.append(
+                {
+                    "id":           msg["id"],
+                    "thread_id":    msg.get("threadId", ""),
+                    "from":         _get_header(headers, "From"),
+                    "subject":      _get_header(headers, "Subject") or "(no subject)",
+                    "snippet":      msg.get("snippet", ""),
+                    "date":         _get_header(headers, "Date"),
+                    "is_unread":    "UNREAD" in label_ids,
+                    "body_preview": _summarise_body(body_text),
+                }
+            )
+        except Exception:
+            continue
+
+    return matched
+
+
+# ---------------------------------------------------------------------------
+# 9. Archive an Email (archive_message)
+# ---------------------------------------------------------------------------
+# In Gmail, "archiving" simply means removing the email from your INBOX
+# while keeping it safely stored in "All Mail".
+# When the user says "archive email 1", this function removes the INBOX label.
+def archive_message(creds: Credentials, msg_id: str) -> bool:
+    """
+    Archives an email by removing it from the INBOX label.
+    Returns True if successfully archived.
+    """
+    if not msg_id:
+        raise ValueError("Cannot archive: missing message ID.")
+
+    service = _get_service(creds)
+    try:
+        service.users().messages().modify(
+            userId="me",
+            id=msg_id,
+            body={"removeLabelIds": ["INBOX"]},
+        ).execute()
+        return True
+    except Exception as e:
+        raise RuntimeError(f"Failed to archive email: {e}")
+
+
+# ---------------------------------------------------------------------------
+# 10. Move an Email to Trash (trash_message)
+# ---------------------------------------------------------------------------
+# When the user says "delete email 2" or "trash message 3", this function
+# moves the message into Gmail's Trash folder (where it stays for 30 days
+# before Google permanently erases it, so you never accidentally lose data).
+def trash_message(creds: Credentials, msg_id: str) -> bool:
+    """
+    Moves an email to the Trash folder.
+    Returns True if successfully trashed.
+    """
+    if not msg_id:
+        raise ValueError("Cannot delete: missing message ID.")
+
+    service = _get_service(creds)
+    try:
+        service.users().messages().trash(userId="me", id=msg_id).execute()
+        return True
+    except Exception as e:
+        raise RuntimeError(f"Failed to trash email: {e}")
+
+
+# ---------------------------------------------------------------------------
+# 11. Mark an Email as Read (mark_as_read)
+# ---------------------------------------------------------------------------
+# When the user listens to an email or says "mark as read", this function
+# tells Google to turn off the bold UNREAD highlight on that email.
+def mark_as_read(creds: Credentials, msg_id: str) -> bool:
+    """
+    Marks an email as read by removing the UNREAD label.
+    Returns True if successfully updated.
+    """
+    if not msg_id:
+        raise ValueError("Cannot mark as read: missing message ID.")
+
+    service = _get_service(creds)
+    try:
+        service.users().messages().modify(
+            userId="me",
+            id=msg_id,
+            body={"removeLabelIds": ["UNREAD"]},
+        ).execute()
+        return True
+    except Exception as e:
+        raise RuntimeError(f"Failed to mark email as read: {e}")
+
+
