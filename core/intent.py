@@ -114,6 +114,54 @@ INTENT_PHRASES = {
         "how do I use this",
     ],
 
+    # --- Search emails by sender, topic, or keyword ---
+    "search": [
+        "search for",
+        "search emails for",
+        "find emails from",
+        "find emails about",
+        "look for emails",
+        "search my emails",
+        "find messages",
+        "search inbox for",
+        "search",
+        "find",
+    ],
+
+    # --- Archive an email ---
+    "archive": [
+        "archive email",
+        "archive message",
+        "archive this email",
+        "archive",
+        "archive the first",
+        "archive the second",
+        "archive number",
+    ],
+
+    # --- Delete / Trash an email ---
+    "trash": [
+        "delete email",
+        "delete message",
+        "trash email",
+        "trash message",
+        "delete this email",
+        "move to trash",
+        "delete number",
+        "trash the first",
+        "delete the second",
+    ],
+
+    # --- Mark an email as read ---
+    "mark_read": [
+        "mark as read",
+        "mark email as read",
+        "mark message as read",
+        "mark read",
+        "mark the first as read",
+        "mark this as read",
+    ],
+
     # --- Confirmation (used during multi-turn email compose & actions) ---
     "confirm": [
         "yes",
@@ -182,13 +230,13 @@ def _extract_params(intent: str, transcript: str) -> dict:
     params = {}
     text = transcript.lower()
 
-    if intent == "read_email":
-        # Try to find a digit: "read email 2" → index 1
+    if intent in ("read_email", "archive", "trash", "mark_read"):
+        # Try to find a digit: "read email 2", "archive email 1" → index 1, 0
         digit_match = re.search(r"\b(\d+)\b", text)
         if digit_match:
             params["email_index"] = int(digit_match.group(1)) - 1  # convert to 0-based
 
-        # Try to find an ordinal word: "read the third email" → index 2
+        # Try to find an ordinal word: "archive the first email" → index 0
         for word in text.split():
             idx = _ordinal_to_index(word)
             if idx is not None:
@@ -197,6 +245,16 @@ def _extract_params(intent: str, transcript: str) -> dict:
 
         # Default to first email if no number found
         params.setdefault("email_index", 0)
+
+    elif intent == "search":
+        # Extract search keywords: "search for amazon receipts" -> "amazon receipts"
+        query = re.sub(
+            r"^(?:search(?:\s+for|\s+emails\s+for|\s+my\s+emails\s+for|\s+inbox\s+for)?|find(?:\s+emails\s+from|\s+emails\s+about|\s+messages\s+from)?|look\s+for)\s+",
+            "",
+            text,
+            flags=re.IGNORECASE,
+        ).strip()
+        params["query"] = query or text
 
     elif intent == "compose":
         # 1. First check if there is an explicit email address: "email to test@example.com"
