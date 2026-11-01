@@ -19,7 +19,7 @@ because it will be spoken aloud by gTTS and heard through speakers, not read on 
 """
 
 import logging
-from gmail.client import list_inbox
+from gmail.client import list_inbox, search_messages
 from google.oauth2.credentials import Credentials
 
 logger = logging.getLogger(__name__)
@@ -136,7 +136,36 @@ def narrate_email(creds: Credentials, email_index: int = 0) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 4. Help Narration (get_help_text)
+# 4. Narrate Search Results (narrate_search_results)
+# ---------------------------------------------------------------------------
+# When the user asks "search for amazon" or "find receipts", this function
+# searches Gmail and summarizes the matching emails in a friendly voice.
+def narrate_search_results(creds: Credentials, query: str) -> str:
+    """
+    Searches Gmail for the given query and returns a spoken summary of results.
+    """
+    if not query:
+        return "What would you like to search for? Please say a keyword or sender name."
+
+    try:
+        results = search_messages(creds, query=query, max_results=INBOX_SUMMARY_COUNT)
+    except Exception as e:
+        logger.error(f"[VocaMail] Search error: {e}")
+        return f"Sorry, the search for '{query}' failed. Please try again."
+
+    if not results:
+        return f"No emails found matching '{query}'. Try a different search word."
+
+    count = len(results)
+    lines = [f"Found {count} email{'s' if count != 1 else ''} for '{query}'."]
+    for i, email in enumerate(results):
+        lines.append(_format_email_line(email, i))
+
+    return " ".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# 5. Help Narration (get_help_text)
 # ---------------------------------------------------------------------------
 # Called when the user says "help" or "what can you do".
 # Returns a friendly spoken list of all supported voice commands.
@@ -144,11 +173,14 @@ def get_help_text() -> str:
     """Returns a friendly spoken description of all supported voice commands."""
     return (
         "Here is what you can ask me. "
-        "Say 'read my inbox' to hear a summary of your latest emails. "
-        "Say 'read email 1' or 'read the second email' to hear a full email. "
-        "Say 'compose email to name' to start writing a new email. "
-        "Say 'help' to hear this list again. "
-        "Say 'log out' to sign out of your Google account. "
-        "Press Space or tap the microphone button to begin speaking."
+        "Say 'read my inbox' to hear your recent emails. "
+        "Say 'read email 1' to hear a full email. "
+        "Say 'search for' followed by a keyword to find specific emails. "
+        "Say 'archive email 1' to move an email out of your inbox. "
+        "Say 'delete email 1' to send it to the trash. "
+        "Say 'mark email 1 as read' to clear its unread status. "
+        "Say 'compose email' to dictate and send a new email. "
+        "Say 'log out' to sign out of your account. "
+        "Press Space or tap the microphone button to talk."
     )
 
