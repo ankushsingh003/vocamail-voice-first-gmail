@@ -7,13 +7,16 @@
 
 ---
 
-![Python](https://img.shields.io/badge/Python-3.13-7c3aed?style=flat-square&logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.10+-7c3aed?style=flat-square&logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-3.0-7c3aed?style=flat-square&logo=flask&logoColor=white)
-![Gmail API](https://img.shields.io/badge/Gmail_API-v1-7c3aed?style=flat-square&logo=gmail&logoColor=white)
-![Whisper](https://img.shields.io/badge/Whisper-OpenAI-7c3aed?style=flat-square&logo=openai&logoColor=white)
+![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/Vite-5.0-646cff?style=flat-square&logo=vite&logoColor=white)
+![Gmail API](https://img.shields.io/badge/Gmail_API-v1-ea4335?style=flat-square&logo=gmail&logoColor=white)
+![Whisper](https://img.shields.io/badge/Whisper-OpenAI-10b981?style=flat-square&logo=openai&logoColor=white)
+![gTTS](https://img.shields.io/badge/gTTS-Google_Speech-4285f4?style=flat-square)
 ![ARIA](https://img.shields.io/badge/WCAG-2.1_AA-7c3aed?style=flat-square)
-![License](https://img.shields.io/badge/License-MIT-a78bfa?style=flat-square)
-![Build](https://img.shields.io/badge/Build-Phase_1_Complete-10b981?style=flat-square)
+![Tests](https://img.shields.io/badge/Tests-21_Passed-10b981?style=flat-square)
+![Build](https://img.shields.io/badge/Build-All_8_Phases_Complete-10b981?style=flat-square)
 
 </div>
 
@@ -21,23 +24,23 @@
 
 ## ▌What is VocaMail?
 
-VocaMail is a **voice-first Gmail client** built for people who navigate the web by voice — including blind users, users with motor impairments, and anyone who wants a hands-free email experience. You press a key, speak a command, and VocaMail reads your inbox aloud, composes messages by dictation, and confirms before sending.
+VocaMail is an **eyes-free, voice-first Gmail interface** engineered specifically for blind users, users with motor impairments, and anyone seeking a seamless hands-free email experience. 
 
-No mouse. No screen scanning. Just your voice.
+Instead of requiring sight to browse lists or fine motor skills to type and point with a mouse, VocaMail operates through natural speech. Tap <kbd>Space</kbd>, speak a command, and VocaMail transcribes your voice, carries out your Gmail action, and speaks the reply aloud.
 
 ---
 
-## ▌One Conversation Turn — How It Works
+## ▌Complete Voice Turn Lifecycle
 
 ```mermaid
 flowchart LR
-    A[🎙️ BROWSER<br/>MediaRecorder] -->|audio blob<br/>POST /api/voice| B[⚙️ FLASK<br/>app.py]
-    B -->|raw audio| C[👂 WHISPER<br/>transcribe.py]
-    C -->|transcript text| D[🧠 INTENT DETECTOR<br/>parser.py]
-    D -->|intent + slots| E[✉️ GMAIL API<br/>client.py]
-    E -->|email data| F[🗣️ gTTS<br/>tts.py]
-    F -->|spoken .mp3| G[🔊 BROWSER<br/>Audio Player]
-    G -->|announce text| H[📢 ARIA LIVE REGION<br/>Screen Readers]
+    A["🎙️ BROWSER<br/>audioRecorder.js"] -->|audio/webm blob<br/>POST /api/voice| B["⚙️ FLASK API<br/>app.py"]
+    B -->|raw audio| C["👂 WHISPER AI<br/>transcribe.py"]
+    C -->|transcript text| D["🧠 INTENT PARSER<br/>core/intent.py"]
+    D -->|intent & slots| E["✉️ GMAIL CLIENT<br/>gmail/client.py"]
+    E -->|data / action| F["🗣️ gTTS VOICE<br/>speech/tts.py"]
+    F -->|spoken .mp3| G["🔊 REACT APP<br/>Hidden &lt;audio&gt;"]
+    G -->|ARIA announcement| H["📢 SCREEN READERS<br/>NVDA / VoiceOver"]
 
     style A fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#f1f0ff
     style B fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#f1f0ff
@@ -51,42 +54,48 @@ flowchart LR
 
 ---
 
-## ▌System Architecture
+## ▌Full System Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Frontend [User Interface]
-        UI[index.html<br/>main.js · style.css]
-        REC[Web Audio / MediaRecorder]
+    subgraph Frontend [React 18 + Vite Client (Port 5173)]
+        APP["App.jsx · App.css"]
+        MIC["MicButton.jsx · Spacebar Shortcut"]
+        DRAFT["DraftCard.jsx · Live Email Notepad"]
+        RESP["ResponseBox.jsx · Dual ARIA Live Regions"]
+        LIST["EmailList.jsx · Visual Inbox View"]
+        REC["utils/audioRecorder.js · Web Audio Cues"]
     end
 
-    subgraph Server [Flask Core Engine]
-        APP[app.py<br/>Routes & Session Guard]
-        AUTH[auth/google_oauth.py<br/>OAuth 2.0 Flow]
-        STATE[core/state.py<br/>Conversation Memory]
-        ROUTER[core/router.py<br/>Command Router]
+    subgraph Server [Flask 3.0 API Server (Port 5000)]
+        API["app.py · Routes & Session Guard"]
+        AUTH["auth/google_oauth.py · PKCE Safe OAuth 2.0"]
+        STATE["core/state.py · Conversation Memory"]
+        INTENT["core/intent.py · Fuzzy Phrase Matcher"]
     end
 
-    subgraph SpeechAI [Voice Processing]
-        WHISPER[speech/transcribe.py<br/>Whisper Speech-to-Text]
-        TTS[speech/tts.py<br/>gTTS Text-to-Speech]
-        NLP[nlp/parser.py<br/>rapidfuzz Intent Matching]
+    subgraph SpeechAI [Speech Pipeline]
+        WHISPER["speech/transcribe.py · Whisper Model Cache"]
+        TTS["speech/tts.py · gTTS Audio Generator"]
     end
 
-    subgraph GoogleBackend [Google Cloud]
-        GMAIL[gmail/client.py<br/>Gmail API Client]
+    subgraph GoogleBackend [Google Workspace]
+        GMAIL["gmail/client.py · Official Gmail v1 API"]
+        READER["gmail/reader.py · Spoken Text Formatter"]
     end
 
-    UI -->|1. Press to Talk| REC
-    REC -->|2. POST audio blob| APP
-    APP -->|3. Validate Token| AUTH
-    APP -->|4. Read Memory| STATE
-    APP -->|5. Transcribe| WHISPER
-    WHISPER -->|6. Transcript| NLP
-    NLP -->|7. Intent & Slots| ROUTER
-    ROUTER -->|8. API Call| GMAIL
-    ROUTER -->|9. Build Sentence| TTS
-    TTS -->|10. Spoken Audio| UI
+    MIC -->|1. Record Voice| REC
+    REC -->|2. POST audio/webm| API
+    API -->|3. Validate Token| AUTH
+    API -->|4. Check Memory State| STATE
+    API -->|5. Transcribe Speech| WHISPER
+    WHISPER -->|6. Transcript Text| INTENT
+    INTENT -->|7. Intent & Parameters| GMAIL
+    GMAIL -->|8. Fetch / Send / Modify| READER
+    READER -->|9. Plain English Sentences| TTS
+    TTS -->|10. Stream MP3 & Text| APP
+    APP -->|11. Auto-play Speech & Update UI| RESP
+    APP -->|12. Show Draft Progress| DRAFT
 
     style Frontend fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#f1f0ff
     style Server fill:#1e1b4b,stroke:#a855f7,stroke-width:2px,color:#f1f0ff
@@ -96,96 +105,99 @@ flowchart TD
 
 ---
 
-## ▌Folder Structure
+## ▌Supported Voice Commands
 
-```
-vocamail/
-│
-├── app.py                  ← Flask entry point, all routes
-├── config.py               ← Central settings (reads from .env)
-├── requirements.txt        ← Python dependencies
-├── .env.example            ← Template — copy to .env and fill in
-├── .gitignore
-│
-├── auth/
-│   └── google_oauth.py     ← Build URL · Exchange code · Refresh · Revoke
-│
-├── speech/
-│   ├── transcribe.py       ← Whisper wrapper: audio file → transcript text
-│   └── tts.py              ← gTTS wrapper: speak(text) → mp3 file path
-│
-├── nlp/
-│   ├── intents.py          ← Intent → keyword/phrase pattern dictionary
-│   └── parser.py           ← detect_intent() · extract_slots()
-│
-├── core/
-│   ├── router.py           ← State-aware command router
-│   ├── state.py            ← Session state helpers (get/set/update/reset)
-│   └── handlers/
-│       ├── inbox.py        ← READ_INBOX, READ_MESSAGE, NEXT, PREVIOUS
-│       ├── compose.py      ← COMPOSE multi-turn state machine
-│       ├── reply.py        ← REPLY, FORWARD
-│       └── search.py       ← SEARCH, FILTER
-│
-├── gmail/
-│   └── client.py           ← list · get · send · reply · modify · trash
-│
-├── static/
-│   ├── js/
-│   │   ├── main.js         ← App init, ARIA announcer, status badge
-│   │   ├── recorder.js     ← MediaRecorder, push-to-talk (Phase 2)
-│   │   └── audio.js        ← TTS audio playback, beep sounds (Phase 2)
-│   ├── css/
-│   │   └── style.css       ← Dark mode · Glassmorphism · Animations
-│   └── audio/              ← Temp mp3 files (auto-deleted, gitignored)
-│
-└── templates/
-    └── index.html          ← Single-page app: login + voice interface
-```
-
----
-
-## ▌Tech Stack
-
-| Layer | Technology | Purpose |
+| Voice Command | Action Description | Example Spoken Input |
 |---|---|---|
-| **Web Framework** | Flask 3.0 | Routes, session management, local server |
-| **Voice Capture** | Web Audio API / MediaRecorder | Browser microphone → audio blob |
-| **Speech-to-Text** | OpenAI Whisper (Local / API) | Audio transcription |
-| **Intent Parsing** | rapidfuzz + Regex | Fast phrase matching & slot extraction |
-| **Email Backend** | Gmail API v1 | Read, send, search, label, and modify emails |
-| **Authentication** | Google OAuth 2.0 | Secure token-based Google login |
-| **Text-to-Speech** | gTTS | Spoken response generation (`.mp3`) |
-| **Accessibility** | ARIA Live Regions + WCAG 2.1 AA | Screen reader announcements & high contrast |
-| **Styling** | Vanilla CSS | Dark mode, glassmorphism, responsive layout |
+| **Read Inbox** | Fetches and reads your 5 latest emails with sender & subject | *"read my inbox"*, *"check my emails"*, *"what's new"* |
+| **Read Full Email** | Opens a specific email and reads its full body text aloud | *"read email 1"*, *"open the second email"*, *"read message 3"* |
+| **Compose Email** | Launches the step-by-step voice dictation wizard | *"compose email to alice@example.com about meeting tomorrow"* |
+| **Search Emails** | Queries Gmail for any sender, keyword, or topic | *"search for amazon receipts"*, *"find emails from GitHub"* |
+| **Archive Email** | Removes an email from INBOX (stored safely in All Mail) | *"archive email 1"*, *"archive the second email"* |
+| **Delete Email** | Moves an email into Gmail's Trash folder | *"delete email 3"*, *"trash message 1"* |
+| **Mark as Read** | Clears the UNREAD flag on an email | *"mark email 1 as read"*, *"mark as read"* |
+| **Confirm Action** | Confirms sending an email during the compose flow | *"yes"*, *"send"*, *"send it"*, *"confirm"* |
+| **Cancel Action** | Discards active draft and resets to main menu | *"cancel"*, *"stop"*, *"abort"*, *"nevermind"* |
+| **Help** | Narrates all available voice commands | *"help"*, *"what can you do"*, *"commands"* |
+| **Log Out** | Guides user to sign out of their Google account | *"log out"*, *"sign out"* |
 
 ---
 
-## ▌Conversation State Machine
+## ▌Multi-Turn Email Composition Wizard
 
 ```mermaid
 stateDiagram-v2
     [*] --> Idle
 
-    Idle --> Reading : "check inbox" / "read message"
-    Reading --> Reading : "next" / "previous" / "read more"
-    Reading --> Idle : "stop" / "cancel"
-
     Idle --> Composing : "compose email"
     state Composing {
-        [*] --> Recipient
-        Recipient --> Subject : specify recipient
-        Subject --> Body : dictate subject
-        Body --> Confirm : dictate message
-        Confirm --> Send : "send"
-        Confirm --> Edit : "edit subject/body"
-        Edit --> Confirm : dictated update
+        [*] --> Recipient : "Who would you like to email?"
+        Recipient --> Subject : "john at gmail dot com"
+        Subject --> Body : "project update"
+        Body --> Confirm : "The prototype is ready!"
+        Confirm --> Sent : "yes" / "send"
+        Confirm --> Discarded : "cancel"
     }
-    Composing --> Idle : email sent / "cancel"
+    Sent --> Idle : Email Delivered via Gmail API
+    Discarded --> Idle : Draft Wiped
+```
 
-    Idle --> Searching : "search Amazon"
-    Searching --> Reading : open result
-    Searching --> Idle : "stop" / "cancel"
+During composition:
+- The glowing **`DraftCard`** live-updates on screen showing `To`, `Subject`, `Message Body`, and current step.
+- Spoken email addresses like *"john dot doe at gmail dot com"* are automatically normalized to *"john.doe@gmail.com"*.
+- Saying *"cancel"* at any turn immediately discards the draft.
+
+---
+
+## ▌Repository Layout
+
+```
+vocamail/
+│
+├── app.py                      ← Flask API server, session management, voice pipeline
+├── config.py                   ← Settings & environment loader (.env)
+├── requirements.txt            ← Python dependencies (Whisper, Flask, gTTS, Google APIs)
+├── .env.example                ← Environment template
+│
+├── auth/
+│   └── google_oauth.py         ← OAuth 2.0 flow with PKCE session persistence
+│
+├── core/
+│   ├── intent.py               ← Fuzzy voice intent detector (rapidfuzz)
+│   └── state.py                ← Session memory state machine (get/set/reset/update)
+│
+├── gmail/
+│   ├── client.py               ← list_inbox, send_email, search, archive, trash, mark_read
+│   └── reader.py               ← Formats email dicts into natural spoken sentences
+│
+├── speech/
+│   ├── transcribe.py           ← Whisper Speech-to-Text (Local CPU / OpenAI API fallback)
+│   └── tts.py                  ← gTTS voice synthesizer (MP3 generator & cleaner)
+│
+├── tests/
+│   ├── __init__.py             ← Test suite package
+│   ├── test_intent.py          ← 15 unit tests covering all voice commands
+│   ├── test_state.py           ← 3 unit tests for session conversation lifecycle
+│   └── test_reader.py          ← 3 unit tests for email speech formatting
+│
+└── frontend/                   ← React 18 + Vite Single Page Application
+    ├── package.json            ← React 18, Vite, lucide-react
+    ├── vite.config.js          ← Proxies /api, /login, /oauth to Flask on :5000
+    ├── index.html              ← HTML shell with skip-links and viewport
+    └── src/
+        ├── main.jsx            ← React 18 createRoot mount
+        ├── index.css           ← Global tokens, nebula theme, typography
+        ├── App.jsx / App.css   ← Orchestrator, auth state, voice turn coordinator
+        ├── utils/
+        │   └── audioRecorder.js← Web Audio recorder with 440Hz / 300Hz accessibility beeps
+        └── components/
+            ├── Header.jsx / Header.css         ← Accessible navigation & sign out
+            ├── LoginCard.jsx / LoginCard.css   ← Glassmorphism Google sign-in card
+            ├── StatusBadge.jsx / StatusBadge.css← Pulsing LED status (Ready, Listening, Speaking)
+            ├── MicButton.jsx / MicButton.css   ← Push-to-talk button with purple focus ring
+            ├── DraftCard.jsx / DraftCard.css   ← Live voice email draft visualizer
+            ├── ResponseBox.jsx / ResponseBox.css← Dual ARIA live region speech subtitles
+            └── EmailList.jsx / EmailList.css   ← Visual inbox cards with unread badges
 ```
 
 ---
@@ -194,122 +206,70 @@ stateDiagram-v2
 
 ### Prerequisites
 
-- **Python 3.10+** (tested on Python 3.13)
-- **ffmpeg** (needed if running local Whisper model)
+- **Python 3.10+**
+- **Node.js 18+** & npm
 - **Google Account** with Gmail enabled
-- **Git**
 
-### 1. Clone the repository
+### 1. Clone & Configure
 
 ```bash
 git clone https://github.com/ankushsingh003/vocamail-voice-first-gmail.git
 cd vocamail-voice-first-gmail
 ```
 
-### 2. Install Python dependencies
+Copy the environment template:
+```bash
+cp .env.example .env
+```
+Fill in your `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` from Google Cloud Console.
 
+### 2. Install Dependencies
+
+**Backend:**
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Set up Google Cloud (One-time)
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com).
-2. Create a project named **VocaMail**.
-3. Enable the **Gmail API** under **APIs & Services > Library**.
-4. Configure **OAuth consent screen** (External) and add your Gmail as a **Test User**.
-5. Under **Credentials**, click **Create Credentials > OAuth client ID** (Web application).
-6. Set **Authorized redirect URI** to:
-   ```
-   http://localhost:5000/oauth/callback
-   ```
-7. Copy your **Client ID** and **Client Secret**.
-
-### 4. Configure environment variables
-
+**Frontend:**
 ```bash
-cp .env.example .env
+cd frontend
+npm install
+cd ..
 ```
 
-Open `.env` and fill in:
+### 3. Run Automated Tests
 
-```env
-FLASK_SECRET_KEY=your-random-secret-key
-GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your-client-secret
+Run all 21 unit tests:
+```bash
+python -m unittest discover tests
 ```
 
-### 5. Run the application
+### 4. Start the Application
 
+**Terminal 1 — Backend (Flask on port 5000):**
 ```bash
 python app.py
 ```
 
-Open your browser to: **http://localhost:5000** and click **Sign in with Google**.
-
----
-
-## ▌API Reference
-
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/` | Main single-page application (login wall if not authed) |
-| `GET` | `/login` | Starts the Google OAuth 2.0 consent flow |
-| `GET` | `/oauth/callback` | Google redirect callback, exchanges tokens |
-| `GET` | `/api/session` | Returns current conversation state as JSON |
-| `GET` | `/api/inbox` | Fetches the 5 latest email summaries |
-| `POST` | `/api/voice` | Core voice pipeline: audio blob → transcript → Gmail → TTS |
-| `POST` | `/logout` | Clears all session keys and tokens |
-
-### `POST /api/voice` Payload & Response
-
-```json
-// Response
-{
-  "ok": true,
-  "transcript": "check my inbox",
-  "text": "You have 3 unread emails. First, from Amazon: Your order has shipped.",
-  "audio_url": "/static/audio/response_123.mp3",
-  "state": {
-    "mode": "reading",
-    "current_index": 0
-  }
-}
+**Terminal 2 — Frontend (Vite on port 5173):**
+```bash
+cd frontend
+npm run dev
 ```
 
----
-
-## ▌Accessibility Design
-
-| Feature | Implementation |
-|---|---|
-| **ARIA Live Regions** | `role="status"` and `aria-live="polite"` announce all updates to screen readers |
-| **Keyboard Navigation** | <kbd>Space</kbd> key triggers push-to-talk; full tab order with visible outline |
-| **High Contrast Theme** | Dark mode with crisp near-white text on deep space background (WCAG AA compliant) |
-| **Visual Indicators** | Color + text status badge (Ready, Listening, Processing, Speaking) |
-| **Audio Loop Protection** | TTS playback is muted while microphone is actively recording |
+Open **`http://localhost:5173`** in your browser, sign in with Google, and press <kbd>Space</kbd> to begin speaking!
 
 ---
 
-## ▌Security & Privacy
+## ▌Accessibility Standards (WCAG 2.1 AA)
 
-- **Server-Side Session Storage:** Tokens are stored in server session memory only and never exposed to client-side scripts.
-- **Immediate Audio Cleanup:** Temporary audio recordings and generated MP3 clips are removed after playback.
-- **Zero Email Content Storage:** Email contents are streamed directly to voice output and never saved to a database or logged to disk.
-- **Protected Environment:** `.env` is ignored by Git to prevent credential leaks.
+- **Auditory Cues (Web Audio API):** Clean 440 Hz start tone and 300 Hz stop tone let blind users know exactly when recording starts and ends without looking at the screen.
+- **Dual ARIA Live Regions:** Urgent updates (*"Listening…"*, *"Processing…"*) use `aria-live="assertive"`, while assistant responses use `aria-live="polite"` to avoid clobbering screen reader speech.
+- **Keyboard Navigation:** Full keyboard navigation using <kbd>Space</kbd> or <kbd>Enter</kbd> to record; bright purple `:focus-visible` outlines for low-vision navigators.
+- **Auto-Focus Management:** Keyboard focus returns smoothly to the microphone button after every voice turn.
 
 ---
 
 ## ▌License
 
-Distributed under the MIT License. See [LICENSE](LICENSE) for details.
-
----
-
-<div align="center">
-
-**Built for the people who never got to use email the way they deserved.**
-
-✦ **VocaMail — Your voice is the interface** ✦
-
-</div>
+Distributed under the MIT License. Built with ❤️ for accessibility and voice-first interaction.
