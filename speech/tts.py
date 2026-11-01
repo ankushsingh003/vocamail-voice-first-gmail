@@ -138,3 +138,4 @@ def cleanup_old_audio(max_age_seconds: int = 600) -> int:
         logger.info(f"[VocaMail] Cleaned up {deleted} old TTS audio file(s).")
 
     return deleted
+
