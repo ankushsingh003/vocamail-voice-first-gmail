@@ -87,3 +87,4 @@ export default function DraftCard({ draft = {}, step = "recipient" }) {
     </section>
   );
 }
+
