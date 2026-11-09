@@ -1,0 +1,247 @@
+/* ===========================================================================
+   frontend/src/components/BriefingModal.css — Morning Executive Briefing Styling
+   =========================================================================== */
+
+.briefing-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  backdrop-filter: blur(2px);
+  animation: fadeIn 200ms ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.briefing-card {
+  width: 100%;
+  max-width: 620px;
+  max-height: 85vh;
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: Roboto, Arial, sans-serif;
+  color: #1f1f1f;
+}
+
+/* Header */
+.briefing-header {
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f0f4f9 0%, #e8f0fe 100%);
+  border-bottom: 1px solid #e0e3e7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.briefing-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.briefing-header-badge {
+  background-color: #1a73e8;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.briefing-header-title {
+  font-family: 'Google Sans', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: #1f1f1f;
+}
+
+.briefing-close-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #5f6368;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 150ms ease;
+}
+
+.briefing-close-btn:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+/* Podcast Audio Bar */
+.briefing-audio-bar {
+  background-color: #0b57d0;
+  color: #ffffff;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.briefing-audio-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.briefing-play-btn {
+  background-color: #ffffff;
+  color: #0b57d0;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: opacity 150ms ease;
+}
+
+.briefing-play-btn:hover {
+  opacity: 0.9;
+}
+
+/* Scrollable Content Body */
+.briefing-body {
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Section styling */
+.briefing-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.briefing-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.briefing-section-title.urgent {
+  color: #b3261e;
+}
+
+.briefing-section-title.updates {
+  color: #1a73e8;
+}
+
+.briefing-item-card {
+  background-color: #f8fafd;
+  border: 1px solid #e1e3e1;
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.briefing-item-card:hover {
+  background-color: #edf2fa;
+  border-color: #c2e7ff;
+}
+
+.briefing-item-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.briefing-item-sender {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+.briefing-item-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #b3261e;
+  background-color: #fce8e6;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.briefing-item-subject {
+  font-size: 13px;
+  color: #444746;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.briefing-item-snippet {
+  font-size: 12px;
+  color: #747775;
+  line-height: 1.4;
+}
+
+/* Bottom Noise Summary Tag */
+.briefing-noise-pill {
+  font-size: 12px;
+  color: #5e5e5e;
+  background-color: #f1f3f4;
+  padding: 8px 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Footer */
+.briefing-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #e0e3e7;
+  display: flex;
+  justify-content: flex-end;
+  background-color: #fcfcfc;
+}
+
+.briefing-done-btn {
+  background-color: #0b57d0;
+  color: #ffffff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.briefing-done-btn:hover {
+  background-color: #0842a0;
+}
