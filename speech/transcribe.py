@@ -23,6 +23,7 @@ Key Features:
 """
 
 import os
+import shutil
 import logging
 from typing import Optional
 import config
@@ -34,12 +35,52 @@ _cached_model = None
 
 
 # ---------------------------------------------------------------------------
+# Helper: Ensure FFmpeg is Available on System PATH (_ensure_ffmpeg)
+# ---------------------------------------------------------------------------
+# OpenAI Whisper relies on the command-line tool 'ffmpeg' to unpack audio files
+# (like .webm, .wav, .mp3). On Windows, ffmpeg is rarely installed by default.
+# This helper dynamically locates the bundled ffmpeg from the 'imageio-ffmpeg'
+# library and exposes it to system PATH so Whisper works out of the box with zero setup!
+def _ensure_ffmpeg():
+    """Finds or registers ffmpeg executable on PATH for Whisper decoding."""
+    if shutil.which("ffmpeg"):
+        return
+
+    try:
+        import imageio_ffmpeg
+        ffmpeg_bin = imageio_ffmpeg.get_ffmpeg_exe()
+        bin_dir = os.path.dirname(ffmpeg_bin)
+
+        # On Windows, imageio-ffmpeg names the file 'ffmpeg-win-x86_64-v7.1.exe'.
+        # Whisper specifically expects a binary named 'ffmpeg' (or 'ffmpeg.exe').
+        target_name = "ffmpeg.exe" if os.name == "nt" else "ffmpeg"
+        target_path = os.path.join(bin_dir, target_name)
+        if not os.path.exists(target_path):
+            try:
+                shutil.copyfile(ffmpeg_bin, target_path)
+            except Exception as copy_err:
+                logger.debug(f"[VocaMail] Could not alias ffmpeg: {copy_err}")
+
+        # Prepend directory to PATH so subprocess can find it immediately
+        if bin_dir not in os.environ.get("PATH", ""):
+            os.environ["PATH"] = bin_dir + os.pathsep + os.environ.get("PATH", "")
+            logger.info(f"[VocaMail] Registered bundled ffmpeg on PATH: {bin_dir}")
+    except Exception as err:
+        logger.warning(f"[VocaMail] Could not automatically register ffmpeg: {err}")
+
+
+# Ensure ffmpeg is discovered immediately when module loads
+_ensure_ffmpeg()
+
+
+# ---------------------------------------------------------------------------
 # 1. Load Whisper Model into Memory (_get_whisper_model)
 # ---------------------------------------------------------------------------
 # Loads the neural network once on first use and keeps it ready in RAM.
 def _get_whisper_model():
     """Loads and caches the Whisper model on demand to keep speech turns snappy."""
     global _cached_model
+    _ensure_ffmpeg()
     if _cached_model is None:
         try:
             import whisper
@@ -92,6 +133,7 @@ def _transcribe_via_api(audio_path: str) -> str:
 # fp16=False ensures it runs smoothly on standard computer processors without GPU.
 def _transcribe_locally(audio_path: str) -> str:
     """Transcribes audio using your local CPU without sending any data over the internet."""
+    _ensure_ffmpeg()
     model = _get_whisper_model()
     # fp16=False prevents warnings on CPU-only machines
     result = model.transcribe(audio_path, language="en", fp16=False)
