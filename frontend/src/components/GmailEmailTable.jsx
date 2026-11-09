@@ -1,29 +1,3 @@
-/**
- * frontend/src/components/GmailEmailTable.jsx — Authentic Gmail Inbox Table
- * ===========================================================================
- * Matches the layout of Gmail from the user's screenshot:
- *
- * 1. Action Toolbar:
- *    - Checkbox (select all).
- *    - Refresh button (calls onRefresh to fetch latest emails).
- *    - More menu (three dots).
- *    - Pagination text (e.g. "1–25 of 53").
- *
- * 2. Category Tabs:
- *    - Primary (blue icon, blue underline).
- *    - Promotions (tag icon with green "8 new" badge).
- *    - Social (people icon).
- *    - Updates (info icon with orange "7 new" badge).
- *
- * 3. Email Rows (exact visual match):
- *    - Checkbox & Star button (stars toggle live).
- *    - Sender name (bold if unread).
- *    - Subject in bold + Snippet in light gray.
- *    - Date / timestamp on right.
- *    - Hover action buttons: Archive, Delete (Trash), Mark as read.
- *    - Clicking any row opens the full email detail view!
- */
-
 import React, { useState } from "react";
 import "./GmailEmailTable.css";
 
@@ -40,7 +14,6 @@ export default function GmailEmailTable({
   const [activeTab, setActiveTab] = useState("primary");
   const [selectedIds, setSelectedIds] = useState(new Set());
 
-  // Toggle selection for a single email checkbox
   function toggleSelectOne(id, e) {
     e.stopPropagation();
     setSelectedIds((prev) => {
@@ -51,7 +24,6 @@ export default function GmailEmailTable({
     });
   }
 
-  // Toggle select all
   function toggleSelectAll() {
     if (selectedIds.size === messages.length) {
       setSelectedIds(new Set());
@@ -60,7 +32,6 @@ export default function GmailEmailTable({
     }
   }
 
-  // Format date strings like Gmail (e.g. "28 Oct", "27 Oct", or "14:32")
   function formatGmailDate(dateStr) {
     if (!dateStr) return "";
     try {
@@ -76,7 +47,6 @@ export default function GmailEmailTable({
     }
   }
 
-  // Clean sender display name (e.g. "Google <no-reply@google.com>" -> "Google")
   function formatSender(fromStr) {
     if (!fromStr) return "Unknown";
     const match = fromStr.match(/^"?([^"<]+)"?\s*<?/);
@@ -86,7 +56,7 @@ export default function GmailEmailTable({
 
   return (
     <section className="gmail-main-content" role="region" aria-label="Email inbox table">
-      {/* 1. Action Toolbar */}
+      {}
       <div className="table-toolbar">
         <div className="toolbar-left">
           <input
@@ -131,7 +101,7 @@ export default function GmailEmailTable({
         </div>
       </div>
 
-      {/* 2. Category Tabs (Primary, Promotions, Social, Updates) */}
+      {}
       <div className="category-tabs" role="tablist">
         <button
           type="button"
@@ -188,7 +158,7 @@ export default function GmailEmailTable({
         </button>
       </div>
 
-      {/* 3. Email Rows List */}
+      {}
       <div className="email-table-scroll" role="table" aria-label="Inbox messages">
         {isLoading && (
           <div className="empty-table-state">
@@ -219,7 +189,7 @@ export default function GmailEmailTable({
                   if (e.key === "Enter") onOpenEmail && onOpenEmail(email);
                 }}
               >
-                {/* Leading: Checkbox & Star Button */}
+                {}
                 <div className="row-leading">
                   <input
                     type="checkbox"
@@ -244,23 +214,23 @@ export default function GmailEmailTable({
                   </button>
                 </div>
 
-                {/* Sender Column */}
+                {}
                 <span className="row-sender" title={email.from}>
                   {formatSender(email.from)}
                 </span>
 
-                {/* Subject & Snippet Preview Column */}
+                {}
                 <div className="row-content">
                   <span className="row-subject">{email.subject}</span>
                   <span className="row-separator">-</span>
                   <span className="row-snippet">{email.snippet}</span>
                 </div>
 
-                {/* Trailing: Date / Hover Action Bar */}
+                {}
                 <div className="row-trailing">
                   <span className="row-date">{formatGmailDate(email.date)}</span>
 
-                  {/* Hover Quick Actions */}
+                  {}
                   <div className="row-hover-actions">
                     <button
                       type="button"
