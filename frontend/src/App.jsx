@@ -393,8 +393,14 @@ export default function App() {
         }
       }
 
-      // Play gTTS spoken audio reply if server returns one
-      if (data.audio_url && audioRef.current) {
+      // Handle voice briefing intent: open modal & populate podcast digest
+      if (data.briefing_data) {
+        setBriefingData(data.briefing_data);
+        setIsBriefingOpen(true);
+      }
+
+      // Play gTTS spoken audio reply if server returns one (and not briefing modal)
+      if (data.audio_url && audioRef.current && !data.briefing_data) {
         audioRef.current.src = data.audio_url;
         audioRef.current.play().catch(() => {});
       }
