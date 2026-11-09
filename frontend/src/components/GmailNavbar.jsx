@@ -162,21 +162,44 @@ export default function GmailNavbar({
   userName = "User",
 }) {
   const [isAppsOpen, setIsAppsOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterCriteria, setFilterCriteria] = useState({
+    from: "",
+    to: "",
+    subject: "",
+    hasWords: "",
+  });
   const [showPromo, setShowPromo] = useState(true);
   const appsRef = useRef(null);
+  const filterRef = useRef(null);
 
-  // Close dropdown when clicking anywhere outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(e) {
       if (appsRef.current && !appsRef.current.contains(e.target)) {
         setIsAppsOpen(false);
       }
+      if (filterRef.current && !filterRef.current.contains(e.target)) {
+        setIsFilterOpen(false);
+      }
     }
-    if (isAppsOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
+    document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isAppsOpen]);
+  }, []);
+
+  function handleFilterSubmit(e) {
+    if (e) e.preventDefault();
+    const parts = [];
+    if (filterCriteria.from.trim()) parts.push(`from:${filterCriteria.from.trim()}`);
+    if (filterCriteria.to.trim()) parts.push(`to:${filterCriteria.to.trim()}`);
+    if (filterCriteria.subject.trim()) parts.push(`subject:${filterCriteria.subject.trim()}`);
+    if (filterCriteria.hasWords.trim()) parts.push(filterCriteria.hasWords.trim());
+
+    const finalQuery = parts.join(" ");
+    if (onSearchChange) onSearchChange(finalQuery);
+    if (onSearchSubmit) onSearchSubmit(finalQuery);
+    setIsFilterOpen(false);
+  }
 
   // Close dropdown on Escape key
   useEffect(() => {
@@ -267,12 +290,88 @@ export default function GmailNavbar({
             </svg>
           </button>
 
-          {/* Search Options / Tune Icon */}
-          <button type="button" className="icon-btn" aria-label="Show search options">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-              <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z" />
-            </svg>
-          </button>
+          {/* Search Options / Tune Icon with Popup Filter Box */}
+          <div className="search-filter-wrapper" ref={filterRef}>
+            <button
+              type="button"
+              className={`icon-btn ${isFilterOpen ? "icon-btn-active" : ""}`}
+              aria-label="Show search options"
+              title="Show search options"
+              onClick={() => setIsFilterOpen((prev) => !prev)}
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z" />
+              </svg>
+            </button>
+
+            {/* Filter Dropdown Card */}
+            {isFilterOpen && (
+              <form className="search-filter-dropdown" onSubmit={handleFilterSubmit}>
+                <div className="search-filter-row">
+                  <label>From</label>
+                  <input
+                    type="text"
+                    value={filterCriteria.from}
+                    onChange={(e) =>
+                      setFilterCriteria((prev) => ({ ...prev, from: e.target.value }))
+                    }
+                    placeholder="Sender name or email"
+                  />
+                </div>
+
+                <div className="search-filter-row">
+                  <label>To</label>
+                  <input
+                    type="text"
+                    value={filterCriteria.to}
+                    onChange={(e) =>
+                      setFilterCriteria((prev) => ({ ...prev, to: e.target.value }))
+                    }
+                    placeholder="Recipient"
+                  />
+                </div>
+
+                <div className="search-filter-row">
+                  <label>Subject</label>
+                  <input
+                    type="text"
+                    value={filterCriteria.subject}
+                    onChange={(e) =>
+                      setFilterCriteria((prev) => ({ ...prev, subject: e.target.value }))
+                    }
+                    placeholder="Subject contains"
+                  />
+                </div>
+
+                <div className="search-filter-row">
+                  <label>Has the words</label>
+                  <input
+                    type="text"
+                    value={filterCriteria.hasWords}
+                    onChange={(e) =>
+                      setFilterCriteria((prev) => ({ ...prev, hasWords: e.target.value }))
+                    }
+                    placeholder="Keywords"
+                  />
+                </div>
+
+                <div className="search-filter-footer">
+                  <button
+                    type="button"
+                    className="filter-reset-btn"
+                    onClick={() =>
+                      setFilterCriteria({ from: "", to: "", subject: "", hasWords: "" })
+                    }
+                  >
+                    Reset
+                  </button>
+                  <button type="submit" className="filter-search-btn">
+                    Search
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
       </div>
 
