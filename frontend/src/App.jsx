@@ -152,9 +152,18 @@ export default function App() {
   async function handleOpenEmail(emailSummary) {
     try {
       const res = await fetch(`/api/email/${encodeURIComponent(emailSummary.id)}`);
-      setSelectedEmail(res.ok ? await res.json() : emailSummary);
+      if (res.ok) {
+        const data = await res.json();
+        // Backend wraps the email under { ok: true, email: {...} }
+        // Also normalize 'from' → 'sender' so GmailDetailView renders correctly
+        const raw = data.email || data;
+        setSelectedEmail({ ...raw, sender: raw.from || raw.sender || "Unknown" });
+      } else {
+        // Fallback: use the inbox row data we already have (normalize field names too)
+        setSelectedEmail({ ...emailSummary, sender: emailSummary.from || emailSummary.sender || "Unknown" });
+      }
     } catch {
-      setSelectedEmail(emailSummary);
+      setSelectedEmail({ ...emailSummary, sender: emailSummary.from || emailSummary.sender || "Unknown" });
     }
   }
 
