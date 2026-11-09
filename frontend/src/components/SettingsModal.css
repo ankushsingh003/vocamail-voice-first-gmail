@@ -1,0 +1,147 @@
+/* ===========================================================================
+   frontend/src/components/SettingsModal.css — Authentic Gmail Quick Settings
+   =========================================================================== */
+
+.settings-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+  animation: fadeIn 150ms ease;
+}
+
+.settings-drawer {
+  width: 320px;
+  height: 100%;
+  background-color: #ffffff;
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  font-family: Roboto, Arial, sans-serif;
+  color: #1f1f1f;
+  animation: slideIn 200ms ease;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.settings-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid #e0e3e7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-title {
+  font-family: 'Google Sans', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #1f1f1f;
+}
+
+.settings-close-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #5f6368;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-close-btn:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+.settings-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #5f6368;
+}
+
+.settings-option-card {
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.settings-option-card:hover {
+  border-color: #0b57d0;
+  background-color: #f8fafd;
+}
+
+.settings-option-card.active {
+  border-color: #0b57d0;
+  background-color: #edf2fa;
+}
+
+.settings-option-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1f1f1f;
+}
+
+.settings-option-desc {
+  font-size: 12px;
+  color: #5f6368;
+  margin-top: 2px;
+}
+
+.settings-toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background-color: #dadce0;
+  border-radius: 20px;
+  transition: background-color 150ms ease;
+  flex-shrink: 0;
+}
+
+.settings-toggle.checked {
+  background-color: #0b57d0;
+}
+
+.settings-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  transition: transform 150ms ease;
+}
+
+.settings-toggle.checked .settings-toggle-thumb {
+  transform: translateX(16px);
+}
