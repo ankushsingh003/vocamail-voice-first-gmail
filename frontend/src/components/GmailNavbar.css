@@ -1,13 +1,3 @@
-/* ===========================================================================
-   frontend/src/components/GmailNavbar.css — Authentic Gmail Header Styling
-   ===========================================================================
-   Matches the top navigation bar of Gmail with:
-     - Google logo & VocaMail brand styling.
-     - Center rounded pill search bar with embedded Voice Microphone.
-     - Profile avatar & app icons on the right.
-     - Google Apps (9-dot waffle) full dropdown panel.
-   =========================================================================== */
-
 .gmail-header {
   height: 64px;
   background-color: var(--gm-header-bg);
@@ -22,9 +12,6 @@
   z-index: 200;
 }
 
-/* ---------------------------------------------------------------------------
-   Left Brand Section
-   --------------------------------------------------------------------------- */
 .header-left {
   display: flex;
   align-items: center;
@@ -84,9 +71,6 @@
   margin-left: 2px;
 }
 
-/* ---------------------------------------------------------------------------
-   Center Search Bar with Embedded Voice Mic
-   --------------------------------------------------------------------------- */
 .header-center {
   flex: 1;
   max-width: 720px;
@@ -125,7 +109,6 @@
   font-size: 0.95rem;
 }
 
-/* Senior Dev Voice Search Integration inside Search Bar */
 .voice-search-btn {
   width: 36px;
   height: 36px;
@@ -158,9 +141,6 @@
   100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
 }
 
-/* ---------------------------------------------------------------------------
-   Search Options / Tune Filter Popup
-   --------------------------------------------------------------------------- */
 .search-filter-wrapper {
   position: relative;
 }
@@ -242,16 +222,12 @@
   background-color: #1557b0;
 }
 
-/* ---------------------------------------------------------------------------
-   Right Header Actions (Help, Settings, Avatar)
-   --------------------------------------------------------------------------- */
 .header-right {
   display: flex;
   align-items: center;
   gap: var(--sp-xs);
 }
 
-/* ⚡ Morning Briefing Pill in Navbar */
 .briefing-trigger-btn {
   display: flex;
   align-items: center;
@@ -311,18 +287,12 @@
   background-color: rgba(201, 59, 43, 0.08);
 }
 
-/* ---------------------------------------------------------------------------
-   Google Apps 9-Dot Waffle Button (Wrapper for Relative Dropdown Positioning)
-   --------------------------------------------------------------------------- */
 .google-apps-wrapper {
   position: relative;
   display: inline-flex;
   align-items: center;
 }
 
-/* ---------------------------------------------------------------------------
-   Google Apps Dropdown Panel — matches the real Google Waffle menu exactly
-   --------------------------------------------------------------------------- */
 .google-apps-dropdown {
   position: absolute;
   top: calc(100% + 8px);
@@ -352,7 +322,6 @@
   }
 }
 
-/* Scrollbar styling for the dropdown */
 .google-apps-dropdown::-webkit-scrollbar {
   width: 6px;
 }
@@ -361,7 +330,6 @@
   border-radius: 3px;
 }
 
-/* Dropdown header row: "Your favorites" + edit pencil */
 .apps-dropdown-header {
   display: flex;
   align-items: center;
@@ -393,9 +361,6 @@
   background-color: #e8eaed;
 }
 
-/* ---------------------------------------------------------------------------
-   App Icons Grid — 3-column grid matching Google's waffle layout
-   --------------------------------------------------------------------------- */
 .apps-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -403,7 +368,6 @@
   padding: 0 8px;
 }
 
-/* Each individual app tile */
 .app-tile {
   display: flex;
   flex-direction: column;
@@ -425,7 +389,6 @@
   background-color: #f1f3f4;
 }
 
-/* Circle icon container */
 .app-icon-circle {
   width: 56px;
   height: 56px;
@@ -443,7 +406,6 @@
   object-fit: contain;
 }
 
-/* SVG icons for apps */
 .app-icon-circle svg {
   width: 40px;
   height: 40px;
@@ -457,9 +419,6 @@
   font-weight: 400;
 }
 
-/* ---------------------------------------------------------------------------
-   Promotional Banner inside dropdown (optional — matches Gmail's Gemini promo)
-   --------------------------------------------------------------------------- */
 .apps-promo-banner {
   margin: 12px 16px;
   background: linear-gradient(135deg, #e8f0fe 0%, #f3e8fd 100%);
@@ -511,7 +470,6 @@
   background-color: #0842a0;
 }
 
-/* Divider line */
 .apps-dropdown-divider {
   height: 1px;
   background-color: #e0e0e0;
