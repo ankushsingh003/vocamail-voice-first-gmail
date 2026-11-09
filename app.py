@@ -530,6 +530,130 @@ def api_voice():
     return jsonify(response_payload)
 
 
+@app.route("/api/smart-replies", methods=["POST"])
+@login_required
+def api_smart_replies():
+    data = request.get_json(silent=True) or {}
+    subject = data.get("subject", "").strip()
+    body = data.get("body", "").strip()
+    sender = data.get("sender", "").strip()
+
+    if not (subject or body):
+        return jsonify({"ok": False, "error": "No email content provided"}), 400
+
+    email_context = f"Subject: {subject}\nFrom: {sender}\n\n{body}"
+
+    try:
+        import openai
+        client = openai.OpenAI(api_key=config.OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a smart email assistant. Given an email, produce exactly 3 short reply suggestions. "
+                        "Return a JSON array with 3 objects, each with keys: "
+                        "\"tone\" (one of: accept, reschedule, decline), "
+                        "\"label\" (short pill label, max 5 words), "
+                        "\"preview\" (one-sentence preview shown on the pill), "
+                        "\"body\" (full professional reply body, 2-4 sentences, ready to send). "
+                        "The user signs off as themselves. Keep the tone natural and professional. "
+                        "Return ONLY valid JSON, no markdown fences."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": f"Email to reply to:\n\n{email_context}",
+                },
+            ],
+            max_tokens=800,
+            temperature=0.7,
+        )
+        raw = response.choices[0].message.content.strip()
+        import json as json_lib
+        suggestions = json_lib.loads(raw)
+        return jsonify({"ok": True, "suggestions": suggestions})
+    except Exception as e:
+        logger.error(f"[VocaMail] Smart replies error: {e}")
+        fallback = [
+            {
+                "tone": "accept",
+                "label": "Accept & Confirm",
+                "preview": "Sounds great, let's do it!",
+                "body": f"Hi,\n\nSounds great! Happy to confirm. Looking forward to it.\n\nBest regards",
+            },
+            {
+                "tone": "reschedule",
+                "label": "Request Reschedule",
+                "preview": "I'm booked then, can we reschedule?",
+                "body": f"Hi,\n\nThank you for reaching out. I'm unfortunately not available at that time — could we find another slot that works for both of us?\n\nBest regards",
+            },
+            {
+                "tone": "decline",
+                "label": "Polite Decline",
+                "preview": "Thank you, but I'll pass.",
+                "body": f"Hi,\n\nThank you so much for thinking of me. Unfortunately I'll have to pass this time, but I appreciate you reaching out.\n\nBest regards",
+            },
+        ]
+        return jsonify({"ok": True, "suggestions": fallback, "fallback": True})
+
+
+@app.route("/api/ai-draft-reply", methods=["POST"])
+@login_required
+def api_ai_draft_reply():
+    data = request.get_json(silent=True) or {}
+    subject = data.get("subject", "").strip()
+    body = data.get("body", "").strip()
+    sender = data.get("sender", "").strip()
+    instruction = data.get("instruction", "").strip()
+    tone = data.get("tone", "neutral").strip()
+
+    if not instruction and not tone:
+        return jsonify({"ok": False, "error": "No instruction provided"}), 400
+
+    email_context = f"Subject: {subject}\nFrom: {sender}\n\n{body}"
+    user_prompt = instruction if instruction else f"Write a {tone} reply to this email."
+
+    try:
+        import openai
+        client = openai.OpenAI(api_key=config.OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a professional email assistant. Write a complete, polished email reply body. "
+                        "Do NOT include a subject line. Do NOT include 'Subject:' or 'To:'. "
+                        "Start directly with the salutation (e.g. 'Hi,' or 'Hello,'). "
+                        "End with 'Best regards' and a blank line for the signature. "
+                        "Keep it concise, natural, and professional."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": f"Original email:\n{email_context}\n\nInstruction: {user_prompt}",
+                },
+            ],
+            max_tokens=400,
+            temperature=0.7,
+        )
+        draft_body = response.choices[0].message.content.strip()
+        reply_subject = subject if subject.startswith("Re:") else f"Re: {subject}"
+        return jsonify({
+            "ok": True,
+            "draft": {
+                "to": sender,
+                "subject": reply_subject,
+                "body": draft_body,
+            }
+        })
+    except Exception as e:
+        logger.error(f"[VocaMail] AI draft reply error: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.errorhandler(500)
 def handle_internal_server_error(e):
     logger.error(f"[VocaMail] Unhandled 500 server error: {e}")
