@@ -193,6 +193,20 @@ INTENT_PHRASES = {
         "cancel email",
         "no don't send",
     ],
+
+    # --- Morning Executive Briefing (Daily AI Audio Podcast) ---
+    "briefing": [
+        "give me my morning briefing",
+        "morning briefing",
+        "vocamail briefing",
+        "executive briefing",
+        "daily briefing",
+        "play briefing",
+        "play my briefing",
+        "daily podcast",
+        "morning podcast",
+        "briefing",
+    ],
 }
 
 # Minimum similarity score (0–100) needed to accept a fuzzy match.
