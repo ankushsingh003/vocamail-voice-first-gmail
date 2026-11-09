@@ -1,25 +1,7 @@
-/**
- * frontend/src/components/DraftCard.jsx — Live Voice Email Draft Visualizer
- * =========================================================================
- * Think of this component like a live electronic notepad on your desk.
- *
- * When you tell VocaMail: "Compose email to friend@gmail.com",
- * this card slides onto the screen. As you speak the recipient, subject,
- * and body, it fills in each line in real time so you can review what
- * you've dictated before saying "yes" to send it!
- *
- * Accessibility features:
- *   - role="region" with aria-label clearly marks this as the active draft card.
- *   - aria-live="polite" notifies assistive technologies whenever fields update.
- *   - Clear semantic labels ensure blind users navigating by keyboard know
- *     exactly what has been recorded so far.
- */
-
 import React from "react";
 import "./DraftCard.css";
 
 export default function DraftCard({ draft = {}, step = "recipient" }) {
-  // Friendly step titles for the top pill badge
   const stepLabels = {
     recipient: "Step 1: Recipient",
     subject:   "Step 2: Subject",
@@ -47,7 +29,7 @@ export default function DraftCard({ draft = {}, step = "recipient" }) {
       </div>
 
       <div className="draft-fields">
-        {/* Recipient Field */}
+        {}
         <div className="draft-row">
           <span className="draft-label" id="draft-to-label">To:</span>
           <div
@@ -58,7 +40,7 @@ export default function DraftCard({ draft = {}, step = "recipient" }) {
           </div>
         </div>
 
-        {/* Subject Field */}
+        {}
         <div className="draft-row">
           <span className="draft-label" id="draft-sub-label">Subject:</span>
           <div
@@ -69,7 +51,7 @@ export default function DraftCard({ draft = {}, step = "recipient" }) {
           </div>
         </div>
 
-        {/* Body Message Field */}
+        {}
         <div className="draft-row">
           <span className="draft-label" id="draft-body-label">Message:</span>
           <div
@@ -87,4 +69,3 @@ export default function DraftCard({ draft = {}, step = "recipient" }) {
     </section>
   );
 }
-
