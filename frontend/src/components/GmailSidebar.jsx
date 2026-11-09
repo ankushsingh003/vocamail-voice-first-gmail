@@ -28,7 +28,13 @@ export default function GmailSidebar({
   onOpenCompose,
   unreadCount = 0,
   isCollapsed = false,
+  labels = ["Work", "Personal", "Receipts"],
+  onAddLabel,
+  activeLabel = null,
+  onSelectLabel,
 }) {
+  const [isAddLabelOpen, setIsAddLabelOpen] = React.useState(false);
+  const [newLabelText, setNewLabelText] = React.useState("");
   const folders = [
     {
       id: "INBOX",
@@ -137,13 +143,66 @@ export default function GmailSidebar({
         })}
       </nav>
 
-      {/* Labels Header */}
+      {/* Labels Header & List */}
       {!isCollapsed && (
-        <div className="sidebar-section-title">
-          <span>Labels</span>
-          <button type="button" className="sidebar-add-btn" aria-label="Create new label">
-            +
-          </button>
+        <div className="sidebar-labels-wrapper">
+          <div className="sidebar-section-title">
+            <span>Labels</span>
+            <button
+              type="button"
+              className="sidebar-add-btn"
+              aria-label="Create new label"
+              title="Create new label"
+              onClick={() => setIsAddLabelOpen((prev) => !prev)}
+            >
+              +
+            </button>
+          </div>
+
+          {/* New Label Quick Input Form */}
+          {isAddLabelOpen && (
+            <form
+              className="sidebar-new-label-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (newLabelText.trim()) {
+                  if (onAddLabel) onAddLabel(newLabelText.trim());
+                  setNewLabelText("");
+                  setIsAddLabelOpen(false);
+                }
+              }}
+            >
+              <input
+                type="text"
+                className="sidebar-new-label-input"
+                placeholder="New label name..."
+                value={newLabelText}
+                onChange={(e) => setNewLabelText(e.target.value)}
+                autoFocus
+              />
+              <button type="submit" className="sidebar-new-label-save">
+                Add
+              </button>
+            </form>
+          )}
+
+          {/* Labels List */}
+          <div className="sidebar-labels-list">
+            {labels.map((labelName) => {
+              const isActive = activeLabel === labelName;
+              return (
+                <button
+                  key={labelName}
+                  type="button"
+                  className={`nav-item label-item ${isActive ? "active" : ""}`}
+                  onClick={() => onSelectLabel && onSelectLabel(labelName)}
+                >
+                  <span className="nav-item-icon label-tag-icon">🏷️</span>
+                  <span className="nav-item-label">{labelName}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </aside>
