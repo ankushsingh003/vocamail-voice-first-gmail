@@ -183,3 +183,52 @@
 .sidebar-add-btn:hover {
   background-color: rgba(0, 0, 0, 0.08);
 }
+
+/* New Label Quick Form & List */
+.sidebar-new-label-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 8px 24px;
+}
+
+.sidebar-new-label-input {
+  flex: 1;
+  height: 28px;
+  font-size: 12px;
+  border: 1px solid #c2e7ff;
+  border-radius: 4px;
+  padding: 0 8px;
+  outline: none;
+  background-color: #ffffff;
+}
+
+.sidebar-new-label-input:focus {
+  border-color: #0b57d0;
+}
+
+.sidebar-new-label-save {
+  height: 28px;
+  background-color: #0b57d0;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.sidebar-labels-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.label-item {
+  height: 32px;
+  font-size: 13px;
+}
+
+.label-tag-icon {
+  font-size: 14px;
+}
