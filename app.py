@@ -477,6 +477,8 @@ def api_voice():
 
     creds = get_credentials()
     reply_text = ""
+    audio_url = None
+    extra_payload = {}
 
     # =======================================================================
     # SCENARIO A: User is in the middle of COMPOSING an email (multi-turn)
@@ -633,6 +635,16 @@ def api_voice():
             state["draft"] = fresh_draft
             set_state(state)
 
+        elif intent == "briefing":
+            try:
+                briefing_data = create_morning_briefing(creds)
+                reply_text = briefing_data.get("audio_script", "Here is your morning executive briefing.")
+                audio_url = briefing_data.get("audio_url")
+                extra_payload["briefing_data"] = briefing_data
+            except Exception as e:
+                logger.error(f"[VocaMail] Briefing intent error: {e}")
+                reply_text = f"Sorry, could not generate your briefing right now: {e}"
+
         elif intent == "help":
             reply_text = get_help_text()
 
@@ -654,22 +666,25 @@ def api_voice():
             )
 
     # ---- 5. gTTS: reply text → spoken MP3 audio file ----
-    cleanup_old_audio()
-    try:
-        audio_url = speak(reply_text)
-    except Exception as e:
-        logger.warning(f"[VocaMail] TTS failed: {e}")
-        audio_url = None
+    if not audio_url:
+        cleanup_old_audio()
+        try:
+            audio_url = speak(reply_text)
+        except Exception as e:
+            logger.warning(f"[VocaMail] TTS failed: {e}")
+            audio_url = None
 
     # ---- 6. Return everything to the React frontend ----
-    return jsonify({
+    response_payload = {
         "ok":         True,
         "transcript": transcript,
         "intent":     intent,
         "text":       reply_text,
         "audio_url":  audio_url,
         "state":      get_state(),
-    })
+    }
+    response_payload.update(extra_payload)
+    return jsonify(response_payload)
 
 
 # ---------------------------------------------------------------------------
