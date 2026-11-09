@@ -1,28 +1,3 @@
-/**
- * frontend/src/App.jsx — Authentic Gmail Web Application with Natural Voice Integration
- * ======================================================================================
- * Voice is integrated naturally where it belongs — not as a floating widget:
- *
- * 1. Top Navbar (<GmailNavbar />):
- *    - Hamburger toggle, Google/Gmail logo, search bar.
- *    - 🎙️ Voice mic button INSIDE the search bar → Whisper-powered voice search.
- *      Click the mic → speak → Whisper transcribes → inbox filters automatically.
- *
- * 2. Left Sidebar (<GmailSidebar />):
- *    - Authentic "+ Compose" pill button → opens the floating compose window.
- *
- * 3. Main Central Content Pane:
- *    - Email Table with category tabs (Primary, Promotions, Social, Updates).
- *    - Email Detail View with "🔊 Listen to Email" narration banner.
- *
- * 4. Floating Compose Window (<GmailComposeModal />):
- *    - To, Subject, Body fields.
- *    - 🎙️ "Dictate" button inside the compose window → voice-to-text for
- *      those who cannot type. Whisper transcribes speech directly into the body.
- *
- * No separate voice widget is shown. Voice is embedded naturally into the UI.
- */
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import GmailNavbar from "./components/GmailNavbar";
 import GmailSidebar from "./components/GmailSidebar";
@@ -33,18 +8,15 @@ import BriefingModal from "./components/BriefingModal";
 import SettingsModal from "./components/SettingsModal";
 import LoginCard from "./components/LoginCard";
 
-// Microphone capture utility (used by both search mic and compose dictation)
 import { startRecording, stopRecording } from "./utils/audioRecorder";
 
 import "./App.css";
 
 export default function App() {
-  // ---- Authentication & User Info ----
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [userProfile, setUserProfile] = useState({ name: "User", email: "" });
 
-  // ---- Email Navigation & Data ----
   const [activeFolder, setActiveFolder] = useState("INBOX");
   const [emails, setEmails] = useState([]);
   const [isLoadingEmails, setIsLoadingEmails] = useState(false);
@@ -52,25 +24,20 @@ export default function App() {
   const [selectedEmail, setSelectedEmail] = useState(null);
   const [isNarratingEmail, setIsNarratingEmail] = useState(false);
 
-  // ---- UI State ----
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [composeDraft, setComposeDraft] = useState({ to: "", subject: "", body: "" });
   const [isSending, setIsSending] = useState(false);
 
-  // ---- Morning Executive Briefing State ----
   const [isBriefingOpen, setIsBriefingOpen] = useState(false);
   const [briefingData, setBriefingData] = useState(null);
   const [isLoadingBriefing, setIsLoadingBriefing] = useState(false);
 
-  // ---- Settings & Labels State ----
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settings, setSettings] = useState({ density: "default", voiceSpeed: "normal", soundCues: true });
   const [labels, setLabels] = useState(["Work", "Personal", "Receipts"]);
   const [activeLabel, setActiveLabel] = useState(null);
 
-  // ---- Voice Recording State (shared by search mic & compose dictation) ----
-  // voiceTarget: "search" = mic in search bar, "compose" = dictate in compose window
   const [isRecording, setIsRecording] = useState(false);
   const [voiceTarget, setVoiceTarget] = useState(null);
   const [vocamailState, setVocamailState] = useState({
@@ -79,14 +46,10 @@ export default function App() {
     draft: { to: null, subject: null, body: null },
   });
 
-  // Hidden audio element for gTTS voice reply playback
   const audioRef = useRef(null);
   const isRecordingRef = useRef(false);
   isRecordingRef.current = isRecording;
 
-  // --------------------------------------------------------------------------
-  // 1. Session Check on App Load
-  // --------------------------------------------------------------------------
   useEffect(() => {
     async function checkAuth() {
       try {
@@ -118,9 +81,6 @@ export default function App() {
     checkAuth();
   }, []);
 
-  // --------------------------------------------------------------------------
-  // 2. Fetch Emails
-  // --------------------------------------------------------------------------
   const loadEmails = useCallback(async (folder = activeFolder, query = "") => {
     setIsLoadingEmails(true);
     try {
@@ -146,20 +106,14 @@ export default function App() {
     if (isLoggedIn) loadEmails(activeFolder, searchQuery);
   }, [isLoggedIn, activeFolder, loadEmails]);
 
-  // --------------------------------------------------------------------------
-  // 3. Email Actions
-  // --------------------------------------------------------------------------
   async function handleOpenEmail(emailSummary) {
     try {
       const res = await fetch(`/api/email/${encodeURIComponent(emailSummary.id)}`);
       if (res.ok) {
         const data = await res.json();
-        // Backend wraps the email under { ok: true, email: {...} }
-        // Also normalize 'from' → 'sender' so GmailDetailView renders correctly
         const raw = data.email || data;
         setSelectedEmail({ ...raw, sender: raw.from || raw.sender || "Unknown" });
       } else {
-        // Fallback: use the inbox row data we already have (normalize field names too)
         setSelectedEmail({ ...emailSummary, sender: emailSummary.from || emailSummary.sender || "Unknown" });
       }
     } catch {
@@ -225,9 +179,6 @@ export default function App() {
     }
   }
 
-  // --------------------------------------------------------------------------
-  // 4. Compose & Reply Actions
-  // --------------------------------------------------------------------------
   function handleOpenCompose(initial = { to: "", subject: "", body: "" }) {
     setComposeDraft(initial);
     setIsComposeOpen(true);
@@ -273,9 +224,6 @@ export default function App() {
     }
   }
 
-  // --------------------------------------------------------------------------
-  // 5. Email Voice Narration ("Listen to Email" in detail view)
-  // --------------------------------------------------------------------------
   function handleVoiceReadEmail(email) {
     if (isNarratingEmail) {
       window.speechSynthesis?.cancel();
@@ -295,12 +243,9 @@ export default function App() {
     }
   }
 
-  // --------------------------------------------------------------------------
-  // 5b. Morning Executive Briefing
-  // --------------------------------------------------------------------------
   async function handleOpenBriefing() {
     setIsBriefingOpen(true);
-    if (briefingData) return; // Keep cached briefing if already generated in this session
+    if (briefingData) return;
 
     setIsLoadingBriefing(true);
     try {
@@ -318,11 +263,6 @@ export default function App() {
     }
   }
 
-  // --------------------------------------------------------------------------
-  // 6. Whisper Voice Pipeline
-  //    Used by both the Search bar mic and the Compose dictation button.
-  //    target: "search" or "compose"
-  // --------------------------------------------------------------------------
   async function handleStartVoice(target) {
     if (isRecordingRef.current) return;
     try {
@@ -364,14 +304,12 @@ export default function App() {
       const spokenText = data.text || data.transcript || "";
 
       if (target === "search") {
-        // Voice search: populate search bar and filter emails
         const query = data.search_query || data.transcript || spokenText;
         if (query) {
           setSearchQuery(query);
           loadEmails(activeFolder, query);
         }
       } else if (target === "compose") {
-        // Voice dictation: append transcribed text into the compose body
         if (data.transcript) {
           setComposeDraft((prev) => ({
             ...prev,
@@ -380,7 +318,6 @@ export default function App() {
         }
       }
 
-      // Handle multi-turn compose flow from backend intent
       if (data.state) {
         setVocamailState(data.state);
         if (data.state.mode === "composing") {
@@ -393,13 +330,11 @@ export default function App() {
         }
       }
 
-      // Handle voice briefing intent: open modal & populate podcast digest
       if (data.briefing_data) {
         setBriefingData(data.briefing_data);
         setIsBriefingOpen(true);
       }
 
-      // Play gTTS spoken audio reply if server returns one (and not briefing modal)
       if (data.audio_url && audioRef.current && !data.briefing_data) {
         audioRef.current.src = data.audio_url;
         audioRef.current.play().catch(() => {});
@@ -410,7 +345,6 @@ export default function App() {
     }
   }
 
-  // Toggle helpers used by navbar mic and compose dictate button
   function handleToggleSearchVoice() {
     if (isRecording && voiceTarget === "search") handleStopVoice();
     else handleStartVoice("search");
@@ -421,11 +355,6 @@ export default function App() {
     else handleStartVoice("compose");
   }
 
-  // --------------------------------------------------------------------------
-  // 7. Render
-  // --------------------------------------------------------------------------
-
-  // Loading screen
   if (isCheckingAuth) {
     return (
       <div className="gmail-loading-screen" role="status" aria-live="polite">
@@ -435,7 +364,6 @@ export default function App() {
     );
   }
 
-  // Logged-out: show sign-in card
   if (!isLoggedIn) {
     return (
       <main className="gmail-login-screen">
@@ -444,13 +372,12 @@ export default function App() {
     );
   }
 
-  // Authenticated: full authentic Gmail web UI
   return (
     <div className="gmail-app-root">
-      {/* Hidden audio element for gTTS voice reply playback */}
+      {}
       <audio ref={audioRef} aria-hidden="true" style={{ display: "none" }} />
 
-      {/* 1. Top Gmail Navbar — voice mic naturally embedded inside search bar */}
+      {}
       <GmailNavbar
         searchQuery={searchQuery}
         onSearchChange={(q) => setSearchQuery(q)}
@@ -466,9 +393,9 @@ export default function App() {
         userName={userProfile.name}
       />
 
-      {/* 2. Main 2-Column Body: Sidebar + Content */}
+      {}
       <div className="gmail-body-layout">
-        {/* Left Sidebar: Compose pill + folder list + labels */}
+        {}
         <GmailSidebar
           currentFolder={activeFolder}
           onSelectFolder={(folder) => {
@@ -491,7 +418,7 @@ export default function App() {
           onAddLabel={(newLbl) => setLabels((prev) => [...prev, newLbl])}
         />
 
-        {/* Central Content: Email Table or Email Detail */}
+        {}
         <main className="gmail-main-content-region" id="main-content">
           {selectedEmail ? (
             <GmailDetailView
@@ -521,7 +448,7 @@ export default function App() {
         </main>
       </div>
 
-      {/* 3. Floating Compose Window — voice dictation embedded inside for accessibility */}
+      {}
       <GmailComposeModal
         isOpen={isComposeOpen}
         draft={composeDraft}
@@ -533,7 +460,7 @@ export default function App() {
         isVoiceActive={isRecording && voiceTarget === "compose"}
       />
 
-      {/* 4. Morning Executive Briefing Podcast Modal */}
+      {}
       <BriefingModal
         isOpen={isBriefingOpen}
         onClose={() => setIsBriefingOpen(false)}
@@ -542,7 +469,7 @@ export default function App() {
         onOpenEmail={handleOpenEmail}
       />
 
-      {/* 5. Quick Settings Side Drawer */}
+      {}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
