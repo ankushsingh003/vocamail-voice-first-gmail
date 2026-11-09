@@ -1,12 +1,3 @@
-/**
- * frontend/src/components/BriefingModal.jsx — Morning Executive Briefing Card
- * ============================================================================
- * Provides an audio podcast daily digest and structured executive briefing:
- *   - Auto-plays the 60-second podcast audio.
- *   - Displays Urgent Action Items with one-click deep link to open the email.
- *   - Groups Key Updates and summarizes triaged background noise.
- */
-
 import React, { useState, useEffect, useRef } from "react";
 import "./BriefingModal.css";
 
@@ -52,14 +43,14 @@ export default function BriefingModal({
   return (
     <div className="briefing-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
       <div className="briefing-card" onClick={(e) => e.stopPropagation()}>
-        {/* Hidden Audio Element */}
+        {}
         <audio
           ref={audioRef}
           onEnded={() => setIsPlaying(false)}
           onError={() => setIsPlaying(false)}
         />
 
-        {/* 1. Header */}
+        {}
         <div className="briefing-header">
           <div className="briefing-header-left">
             <span className="briefing-header-badge">⚡ AI Podcast</span>
@@ -75,7 +66,7 @@ export default function BriefingModal({
           </button>
         </div>
 
-        {/* 2. Audio Podcast Player Bar */}
+        {}
         <div className="briefing-audio-bar">
           <div className="briefing-audio-info">
             <span>🎙️</span>
@@ -91,7 +82,7 @@ export default function BriefingModal({
           </button>
         </div>
 
-        {/* 3. Content Body */}
+        {}
         <div className="briefing-body">
           {isLoading ? (
             <div style={{ textAlign: "center", padding: "40px 0", color: "#5f6368" }}>
@@ -100,7 +91,7 @@ export default function BriefingModal({
             </div>
           ) : (
             <>
-              {/* Urgent Action Items Section */}
+              {}
               {urgent.length > 0 && (
                 <section className="briefing-section">
                   <div className="briefing-section-title urgent">
@@ -128,7 +119,7 @@ export default function BriefingModal({
                 </section>
               )}
 
-              {/* General Updates Section */}
+              {}
               {updates.length > 0 && (
                 <section className="briefing-section">
                   <div className="briefing-section-title updates">
@@ -161,7 +152,7 @@ export default function BriefingModal({
                 </div>
               )}
 
-              {/* Noise Summary Tag */}
+              {}
               {noiseCount > 0 && (
                 <div className="briefing-noise-pill">
                   <span>🧹</span>
@@ -172,7 +163,7 @@ export default function BriefingModal({
           )}
         </div>
 
-        {/* 4. Footer */}
+        {}
         <div className="briefing-footer">
           <button type="button" className="briefing-done-btn" onClick={onClose}>
             Done
