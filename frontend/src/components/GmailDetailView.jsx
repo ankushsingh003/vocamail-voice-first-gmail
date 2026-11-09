@@ -1,5 +1,11 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "./GmailDetailView.css";
+
+const TONE_META = {
+  accept: { emoji: "🟢", color: "accept" },
+  reschedule: { emoji: "🟡", color: "reschedule" },
+  decline: { emoji: "🔴", color: "decline" },
+};
 
 export default function GmailDetailView({
   email,
@@ -11,8 +17,80 @@ export default function GmailDetailView({
   onReply,
   onForward,
   onVoiceRead,
+  onSmartReplyDraft,
   isNarrating = false,
 }) {
+  const [smartReplies, setSmartReplies] = useState(null);
+  const [isLoadingReplies, setIsLoadingReplies] = useState(false);
+  const [voiceInstruction, setVoiceInstruction] = useState("");
+  const [isDraftingVoice, setIsDraftingVoice] = useState(false);
+  const [activePill, setActivePill] = useState(null);
+
+  useEffect(() => {
+    setSmartReplies(null);
+    setActivePill(null);
+    setVoiceInstruction("");
+  }, [email?.id]);
+
+  async function loadSmartReplies() {
+    if (!email) return;
+    setIsLoadingReplies(true);
+    try {
+      const res = await fetch("/api/smart-replies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: email.subject || "",
+          body: email.body || email.body_preview || email.snippet || "",
+          sender: email.sender || "",
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) setSmartReplies(data.suggestions);
+    } catch (err) {
+      console.error("[VocaMail] Smart replies error:", err);
+    } finally {
+      setIsLoadingReplies(false);
+    }
+  }
+
+  async function handlePillClick(suggestion) {
+    setActivePill(suggestion.tone);
+    if (onSmartReplyDraft) {
+      onSmartReplyDraft({
+        to: email.sender || "",
+        subject: email.subject?.startsWith("Re:") ? email.subject : `Re: ${email.subject || ""}`,
+        body: suggestion.body,
+      });
+    }
+  }
+
+  async function handleVoiceDraft() {
+    if (!voiceInstruction.trim()) return;
+    setIsDraftingVoice(true);
+    try {
+      const res = await fetch("/api/ai-draft-reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: email.subject || "",
+          body: email.body || email.body_preview || email.snippet || "",
+          sender: email.sender || "",
+          instruction: voiceInstruction.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.ok && data.draft && onSmartReplyDraft) {
+        onSmartReplyDraft(data.draft);
+        setVoiceInstruction("");
+      }
+    } catch (err) {
+      console.error("[VocaMail] AI draft error:", err);
+    } finally {
+      setIsDraftingVoice(false);
+    }
+  }
+
   if (!email) {
     return (
       <div className="gmail-detail-pane">
@@ -184,6 +262,109 @@ export default function GmailDetailView({
             ? email.body_preview
             : email.snippet || "(No content)"}
       </section>
+
+      {}
+      <div className="smart-reply-section" role="region" aria-label="AI Smart Replies">
+        <div className="smart-reply-header">
+          <div className="smart-reply-header-left">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="#0b57d0">
+              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z" />
+            </svg>
+            <span>AI Smart Replies</span>
+          </div>
+          {!smartReplies && (
+            <button
+              type="button"
+              className="smart-reply-load-btn"
+              onClick={loadSmartReplies}
+              disabled={isLoadingReplies}
+              aria-label="Generate smart reply suggestions"
+            >
+              {isLoadingReplies ? (
+                <span className="smart-reply-spinner" aria-hidden="true" />
+              ) : (
+                <>
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" />
+                  </svg>
+                  Generate Suggestions
+                </>
+              )}
+            </button>
+          )}
+          {smartReplies && (
+            <button
+              type="button"
+              className="smart-reply-load-btn smart-reply-refresh"
+              onClick={loadSmartReplies}
+              disabled={isLoadingReplies}
+              aria-label="Refresh smart reply suggestions"
+            >
+              {isLoadingReplies ? <span className="smart-reply-spinner" aria-hidden="true" /> : "↻ Refresh"}
+            </button>
+          )}
+        </div>
+
+        {smartReplies && (
+          <div className="smart-reply-pills" role="list">
+            {smartReplies.map((s, i) => {
+              const meta = TONE_META[s.tone] || { emoji: "💬", color: "accept" };
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  role="listitem"
+                  className={`smart-reply-pill smart-reply-pill--${meta.color} ${activePill === s.tone ? "active" : ""}`}
+                  onClick={() => handlePillClick(s)}
+                  aria-label={`${s.label}: ${s.preview}`}
+                  title={s.preview}
+                >
+                  <span className="pill-emoji" aria-hidden="true">{meta.emoji}</span>
+                  <span className="pill-label">{s.label}</span>
+                  <span className="pill-preview">{s.preview}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {}
+        <div className="smart-reply-voice-row">
+          <div className="smart-reply-voice-input-wrap">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="#5e5e5e" className="voice-input-icon">
+              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+              <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+            </svg>
+            <input
+              type="text"
+              className="smart-reply-voice-input"
+              placeholder='Say what to reply, e.g. "I agree, ask for the Zoom link"'
+              value={voiceInstruction}
+              onChange={(e) => setVoiceInstruction(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleVoiceDraft()}
+              aria-label="Custom reply instruction"
+            />
+          </div>
+          <button
+            type="button"
+            className="smart-reply-draft-btn"
+            onClick={handleVoiceDraft}
+            disabled={isDraftingVoice || !voiceInstruction.trim()}
+            aria-label="Draft reply from instruction"
+          >
+            {isDraftingVoice ? (
+              <span className="smart-reply-spinner" aria-hidden="true" />
+            ) : (
+              <>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                </svg>
+                Draft Reply
+              </>
+            )}
+          </button>
+        </div>
+      </div>
 
       {}
       <div className="detail-reply-row">
