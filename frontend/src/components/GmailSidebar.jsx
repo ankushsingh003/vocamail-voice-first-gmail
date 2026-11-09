@@ -1,24 +1,3 @@
-/**
- * frontend/src/components/GmailSidebar.jsx — Authentic Gmail Left Sidebar
- * =========================================================================
- * Matches the left navigation from the user's screenshot:
- *
- * 1. Big rounded "+ Compose" button with pencil icon:
- *    - Clicking it opens the Gmail floating compose window.
- *    - Saying "compose email" also triggers this visually!
- *
- * 2. Folders List:
- *    - Inbox (active light blue pill with unread badge count)
- *    - Starred
- *    - Snoozed
- *    - Sent
- *    - Drafts
- *    - Purchases
- *    - Trash
- *
- * 3. Labels Section with "+" add button.
- */
-
 import React from "react";
 import "./GmailSidebar.css";
 
@@ -104,7 +83,7 @@ export default function GmailSidebar({
       role="navigation"
       aria-label="Mail folders"
     >
-      {/* Big Pill Compose Button */}
+      {}
       <div className="compose-btn-wrap">
         <button
           type="button"
@@ -119,7 +98,7 @@ export default function GmailSidebar({
         </button>
       </div>
 
-      {/* Navigation Folder Items */}
+      {}
       <nav className="sidebar-nav">
         {folders.map((folder) => {
           const isActive = currentFolder === folder.id;
@@ -143,7 +122,7 @@ export default function GmailSidebar({
         })}
       </nav>
 
-      {/* Labels Header & List */}
+      {}
       {!isCollapsed && (
         <div className="sidebar-labels-wrapper">
           <div className="sidebar-section-title">
@@ -159,7 +138,7 @@ export default function GmailSidebar({
             </button>
           </div>
 
-          {/* New Label Quick Input Form */}
+          {}
           {isAddLabelOpen && (
             <form
               className="sidebar-new-label-form"
@@ -186,7 +165,7 @@ export default function GmailSidebar({
             </form>
           )}
 
-          {/* Labels List */}
+          {}
           <div className="sidebar-labels-list">
             {labels.map((labelName) => {
               const isActive = activeLabel === labelName;
