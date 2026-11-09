@@ -1,0 +1,196 @@
+/* ===========================================================================
+   frontend/src/components/GmailNavbar.css — Authentic Gmail Header Styling
+   ===========================================================================
+   Matches the top navigation bar of Gmail with:
+     - Google logo & VocaMail brand styling.
+     - Center rounded pill search bar with embedded Voice Microphone.
+     - Profile avatar & app icons on the right.
+   =========================================================================== */
+
+.gmail-header {
+  height: 64px;
+  background-color: var(--gm-header-bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--sp-md);
+  border-bottom: 1px solid var(--gm-border-light);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Left Brand Section
+   --------------------------------------------------------------------------- */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  min-width: 240px;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-full);
+  border: none;
+  background: transparent;
+  color: var(--gm-text-sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color var(--transition);
+}
+
+.icon-btn:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xs);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.brand-logo-svg {
+  width: 30px;
+  height: 24px;
+}
+
+.brand-title {
+  font-family: 'Google Sans', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+  color: var(--gm-text-main);
+  letter-spacing: -0.02em;
+}
+
+.voice-badge-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: rgba(124, 58, 237, 0.12);
+  color: var(--voice-accent);
+  padding: 2px 6px;
+  border-radius: var(--r-sm);
+  margin-left: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   Center Search Bar with Embedded Voice Mic
+   --------------------------------------------------------------------------- */
+.header-center {
+  flex: 1;
+  max-width: 720px;
+  margin: 0 var(--sp-lg);
+}
+
+.gmail-search-box {
+  height: 48px;
+  background-color: var(--gm-search-bg);
+  border-radius: var(--r-pill);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--sp-sm) 0 var(--sp-md);
+  transition: background-color var(--transition), box-shadow var(--transition);
+  border: 1px solid transparent;
+}
+
+.gmail-search-box:focus-within {
+  background-color: var(--gm-search-focus);
+  box-shadow: 0 1px 3px 0 rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 1rem;
+  color: var(--gm-search-text);
+  padding: 0 var(--sp-sm);
+  font-family: inherit;
+}
+
+.search-input::placeholder {
+  color: var(--gm-search-placeholder);
+  font-size: 0.95rem;
+}
+
+/* Senior Dev Voice Search Integration inside Search Bar */
+.voice-search-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-full);
+  border: none;
+  background: transparent;
+  color: var(--voice-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: transform var(--transition), background-color var(--transition);
+}
+
+.voice-search-btn:hover {
+  background-color: rgba(124, 58, 237, 0.12);
+  transform: scale(1.08);
+}
+
+.voice-search-btn.recording {
+  background-color: var(--voice-accent);
+  color: #ffffff;
+  animation: pulseMic 1.5s infinite;
+}
+
+@keyframes pulseMic {
+  0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.5); }
+  70% { box-shadow: 0 0 0 10px rgba(124, 58, 237, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+}
+
+/* ---------------------------------------------------------------------------
+   Right Header Actions (Help, Settings, Avatar)
+   --------------------------------------------------------------------------- */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xs);
+}
+
+.profile-avatar-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-full);
+  background-color: #8e24aa;
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  margin-left: var(--sp-xs);
+}
+
+.signout-btn {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #c93b2b;
+  border: 1px solid rgba(201, 59, 43, 0.3);
+  background: transparent;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  margin-left: var(--sp-sm);
+  transition: all var(--transition);
+}
+
+.signout-btn:hover {
+  background-color: rgba(201, 59, 43, 0.08);
+}
