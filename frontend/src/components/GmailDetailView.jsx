@@ -1,28 +1,3 @@
-/**
- * frontend/src/components/GmailDetailView.jsx — Authentic Gmail Email Detail / Reading View
- * =========================================================================================
- * Displays the full contents of an open email message:
- *
- * 1. Top action toolbar:
- *    - Back arrow: returns to the inbox list view.
- *    - Archive, Trash, Mark as unread buttons with authentic Gmail SVG icons.
- *
- * 2. Voice Narration Bar (Senior Developer Voice Function):
- *    - "🔊 Listen to Email" button: uses VocaMail voice synthesis to read the email aloud.
- *    - Real-time pulsating visual indicator showing speech status.
- *
- * 3. Email Header:
- *    - Large Google Sans subject line with an "Inbox" badge.
- *    - Circular sender avatar with initial.
- *    - Sender display name, email address, date, and "to me" tag.
- *
- * 4. Email Body:
- *    - Renders the full email body or fallback snippet clearly.
- *
- * 5. Quick Actions:
- *    - "Reply" and "Forward" pill buttons that automatically pop open the Compose Modal.
- */
-
 import React from "react";
 import "./GmailDetailView.css";
 
@@ -48,13 +23,12 @@ export default function GmailDetailView({
     );
   }
 
-  // Derive initial letter for the circular sender avatar
   const senderName = email.sender || "Unknown";
   const avatarLetter = (senderName.charAt(0) || "U").toUpperCase();
 
   return (
     <article className="gmail-detail-pane" aria-label={`Email from ${senderName}: ${email.subject}`}>
-      {/* 1. Top Action Toolbar */}
+      {}
       <nav className="detail-toolbar" aria-label="Email toolbar">
         <div className="detail-toolbar-left">
           <button
@@ -129,7 +103,7 @@ export default function GmailDetailView({
         </div>
       </nav>
 
-      {/* 2. Voice Narration Bar (Explicit Senior Developer Voice Function) */}
+      {}
       <div className="voice-read-bar" role="region" aria-label="Voice reading controls">
         <div className="voice-read-info">
           <span className="voice-pulsing-dot" aria-hidden="true" />
@@ -163,7 +137,7 @@ export default function GmailDetailView({
         </button>
       </div>
 
-      {/* 3. Subject Header */}
+      {}
       <header className="detail-header-subject">
         <h1 className="detail-subject-text">
           {email.subject || "(no subject)"}
@@ -171,7 +145,7 @@ export default function GmailDetailView({
         </h1>
       </header>
 
-      {/* 4. Sender Details */}
+      {}
       <div className="detail-meta">
         <div className="detail-meta-left">
           <div className="detail-avatar" aria-hidden="true">
@@ -202,7 +176,7 @@ export default function GmailDetailView({
         </div>
       </div>
 
-      {/* 5. Email Body Content */}
+      {}
       <section className="detail-body-card" tabIndex="0" aria-label="Email message body">
         {(email.body && email.body.trim().length > 0)
           ? email.body
@@ -211,7 +185,7 @@ export default function GmailDetailView({
             : email.snippet || "(No content)"}
       </section>
 
-      {/* 6. Quick Reply & Forward Pill Buttons */}
+      {}
       <div className="detail-reply-row">
         <button
           type="button"
