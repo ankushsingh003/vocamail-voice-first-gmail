@@ -44,6 +44,7 @@ from gmail.client import (
 from gmail.reader import (
     narrate_inbox, narrate_email, get_help_text, narrate_search_results
 )
+from gmail.briefing import create_morning_briefing
 from speech.transcribe import transcribe_audio
 from speech.tts import speak, cleanup_old_audio
 
@@ -374,6 +375,23 @@ def api_search():
         return jsonify({"ok": True, "messages": results, "query": query})
     except Exception as e:
         logger.error(f"[VocaMail] api_search error: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/briefing", methods=["GET", "POST"])
+@login_required
+def api_briefing():
+    """
+    ⚡ Morning Executive Briefing:
+    Fetches unread emails from the past 24-48 hours, triages urgent vs general updates,
+    and returns a synthesized audio podcast URL plus structured executive bullet cards.
+    """
+    try:
+        creds = get_credentials()
+        briefing_data = create_morning_briefing(creds)
+        return jsonify(briefing_data)
+    except Exception as e:
+        logger.error(f"[VocaMail] Briefing generation failed: {e}")
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
