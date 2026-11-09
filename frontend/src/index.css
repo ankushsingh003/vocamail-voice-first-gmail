@@ -1,102 +1,96 @@
 /* ===========================================================================
-   frontend/src/index.css — Global Styles, Theme Tokens & Accessibility
+   frontend/src/index.css — Gmail Design Tokens, Typography & Base Styles
    ===========================================================================
-   This is the master design sheet for our entire React application.
-   It sets up:
-     1. CSS Variables: The global palette (deep space dark, electric violet glow).
-     2. CSS Reset: Makes margins, padding, and box-sizing behave predictably.
-     3. Accessibility Tokens: Screen reader hidden text (.sr-only) and visible
-        high-contrast keyboard navigation rings (:focus-visible).
+   Matches the official Google Gmail web interface aesthetic:
+     1. Modern Material You color tokens (light blue pills, neutral surfaces).
+     2. Google Sans / Roboto typography.
+     3. Dedicated voice assistant accents (electric violet glowing badge).
+     4. High-contrast accessibility tokens (:focus-visible and .sr-only).
    =========================================================================== */
 
-/* ---------------------------------------------------------------------------
-   1. Universal CSS Reset
-   ---------------------------------------------------------------------------
-   Ensures borders and padding don't accidentally inflate element widths.
-*/
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&display=swap');
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-/* ---------------------------------------------------------------------------
-   2. Master Color Tokens & Design Constants
-   ---------------------------------------------------------------------------
-   Every component imports these colors so the whole app stays cohesive.
-*/
 :root {
-  /* Background and Surface Tones */
-  --bg-base:        #08080f;             /* Deep space near-black canvas */
-  --bg-surface:     #0f0f1a;             /* Subtle elevated card tone */
-  --bg-glass:       rgba(255, 255, 255, 0.04); /* Translucent frosted glass */
-  --bg-glass-hover: rgba(255, 255, 255, 0.08); /* Frosted glass hover highlight */
-  --border-glass:   rgba(255, 255, 255, 0.08); /* Subtle glass outline */
+  /* Official Gmail Light Theme Colors */
+  --gm-bg:                 #f6f8fc;
+  --gm-surface:            #ffffff;
+  --gm-header-bg:          #f6f8fc;
+  --gm-search-bg:          #eaf1fb;
+  --gm-search-focus:       #ffffff;
+  --gm-search-text:        #1f1f1f;
+  --gm-search-placeholder: #444746;
+  --gm-compose-bg:         #c2e7ff;
+  --gm-compose-hover:      #b3defa;
+  --gm-compose-text:       #001d35;
+  --gm-nav-active-bg:      #d3e3fd;
+  --gm-nav-active-text:    #041e49;
+  --gm-nav-hover-bg:       #eaebef;
+  --gm-nav-text:           #444746;
+  --gm-text-main:          #1f1f1f;
+  --gm-text-sub:           #444746;
+  --gm-text-muted:         #5e5e5e;
+  --gm-border:             #e0e2ec;
+  --gm-border-light:       #f2f2f2;
+  --gm-row-hover:          #f2f6fc;
+  --gm-row-unread:         #ffffff;
+  --gm-row-read:           #f8fafd;
+  --gm-primary-blue:       #0b57d0;
+  --gm-star-gold:          #f4b400;
+  --gm-star-empty:         #c4c7c5;
 
-  /* Electric Violet Accents */
-  --accent:         #7c3aed;             /* Primary electric violet */
-  --accent-light:   #a78bfa;             /* Lavender violet highlight */
-  --accent-glow:    rgba(124, 58, 237, 0.35); /* Neon purple radial halo */
-
-  /* Typography Colors */
-  --text-primary:   #f1f0ff;             /* Crisp near-white for headings & text */
-  --text-secondary: #9d9ab0;             /* Muted lavender-grey for secondary text */
-  --text-muted:     #5a5770;             /* Quiet dark grey for notes and footnotes */
-
-  /* State Colors */
-  --success:        #10b981;             /* Emerald green for 'Speaking' state */
-  --warning:        #f59e0b;             /* Amber yellow for 'Processing' state */
-  --error:          #ef4444;             /* Coral red for 'Listening' and errors */
+  /* Voice Assistant Accents */
+  --voice-accent:          #7c3aed;
+  --voice-accent-light:    #a78bfa;
+  --voice-glow:            rgba(124, 58, 237, 0.35);
 
   /* Spacing Scale */
   --sp-xs:  4px;
   --sp-sm:  8px;
   --sp-md:  16px;
   --sp-lg:  24px;
-  --sp-xl:  40px;
-  --sp-2xl: 64px;
+  --sp-xl:  32px;
 
-  /* Corner Radii */
-  --r-sm:   8px;
-  --r-md:   16px;
-  --r-lg:   24px;
+  /* Border Radii */
+  --r-sm:   4px;
+  --r-md:   8px;
+  --r-lg:   16px;
+  --r-pill: 24px;
   --r-full: 9999px;
 
-  /* Motion Transition Timing */
-  --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Transitions */
+  --transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-html {
-  font-size: 16px;
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
 
-/* ---------------------------------------------------------------------------
-   3. Body Canvas & Nebula Background
-   ---------------------------------------------------------------------------
-   Creates a subtle, elegant purple cosmic glow at the top and bottom of the page.
-*/
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: var(--bg-base);
-  color: var(--text-primary);
-  min-height: 100vh;
+  font-family: 'Roboto', 'Google Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--gm-bg);
+  color: var(--gm-text-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--sp-lg);
-  background-image:
-    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124, 58, 237, 0.18) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 40% at 80% 100%, rgba(99, 102, 241, 0.10) 0%, transparent 60%);
-  background-attachment: fixed;
 }
 
 /* ---------------------------------------------------------------------------
-   4. Accessibility Utilities
-   ---------------------------------------------------------------------------
-   - .sr-only: Completely invisible to the naked eye, but read aloud by screen readers.
-   - :focus-visible: High-contrast lavender outline when navigating via keyboard TAB key.
-*/
+   Accessibility Utilities
+   --------------------------------------------------------------------------- */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -110,33 +104,6 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent-light);
-  outline-offset: 3px;
-  border-radius: var(--r-sm);
-}
-
-/* ---------------------------------------------------------------------------
-   5. Keyframe Animations
-   ---------------------------------------------------------------------------
-*/
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-    filter: drop-shadow(0 0 12px var(--accent-glow));
-  }
-  50% {
-    opacity: 0.7;
-    filter: drop-shadow(0 0 28px var(--accent-glow));
-  }
+  outline: 2px solid var(--gm-primary-blue);
+  outline-offset: 2px;
 }
