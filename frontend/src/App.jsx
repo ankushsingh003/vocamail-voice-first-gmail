@@ -431,6 +431,7 @@ export default function App() {
               onReply={handleReply}
               onForward={handleForward}
               onVoiceRead={handleVoiceReadEmail}
+              onSmartReplyDraft={handleOpenCompose}
               isNarrating={isNarratingEmail}
             />
           ) : (
