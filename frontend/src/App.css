@@ -1,74 +1,90 @@
-/* ===========================================================================
-   frontend/src/App.css — Main Application Container & Dashboard Layout
-   ===========================================================================
-   Styles the central container that houses either the LoginCard or the
-   VoiceDashboard, including the hero headings and keyboard shortcut hints.
-   =========================================================================== */
+/* ==========================================================================
+   frontend/src/App.css — Authentic Full-Screen Gmail Application Layout
+   ========================================================================== */
 
-#main-content {
-  width: 100%;
-  max-width: 520px;
+/* 1. Root Application Shell — fills the full viewport without page scrolling */
+.gmail-app-root {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--sp-xl);
+  background-color: #f6f8fc;
+  color: #1f1f1f;
+  overflow: hidden;
+  font-family: Roboto, Arial, sans-serif;
+  position: relative;
 }
 
-.voice-screen {
-  width: 100%;
+/* 2. Main 2-Column Body Layout below the top Navbar */
+.gmail-body-layout {
+  display: flex;
+  flex: 1;
+  height: calc(100vh - 64px);
+  overflow: hidden;
+  position: relative;
+}
+
+/* 3. Central Email Content Region (contains either EmailTable or DetailView) */
+.gmail-main-content-region {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  min-width: 0; /* Prevents flex children from overflowing horizontally */
+}
+
+/* 4. Login View Wrapper (centered authentic card when user is not logged in) */
+.gmail-login-screen {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
   align-items: center;
-  gap: var(--sp-lg);
-  animation: fadeUp 0.5s ease both;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 30%, #ffffff 0%, #edf2fc 100%);
+  padding: 24px;
 }
 
-.voice-hero {
-  text-align: center;
-}
-
-.voice-title {
-  font-size: 2rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  margin-bottom: var(--sp-sm);
-  background: linear-gradient(135deg, #f1f0ff 0%, var(--accent-light) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.voice-subtitle {
-  color: var(--text-secondary);
-  font-size: 0.95rem;
-}
-
-/* Keyboard hint badge (<kbd>Space</kbd>) */
-kbd {
-  display: inline-block;
-  padding: 2px 8px;
-  background: var(--bg-glass);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--r-sm);
-  font-family: inherit;
-  font-size: 0.85em;
-  color: var(--text-primary);
-}
-
-/* Loading screen while checking authentication status */
-.app-loading {
+/* 5. Loading screen while authenticating session */
+.gmail-loading-screen {
+  width: 100vw;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 200px;
-  color: var(--text-muted);
-  font-size: 0.95rem;
-  gap: var(--sp-sm);
+  gap: 16px;
+  background-color: #ffffff;
+  color: #0b57d0;
+  font-family: "Google Sans", Roboto, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
 }
 
-@media (max-width: 480px) {
-  .voice-title {
-    font-size: 1.6rem;
-  }
+.gmail-loading-spinner {
+  width: 44px;
+  height: 44px;
+  border: 4px solid #e8f0fe;
+  border-top-color: #0b57d0;
+  border-radius: 50%;
+  animation: spinLoader 0.9s linear infinite;
+}
+
+@keyframes spinLoader {
+  to { transform: rotate(360deg); }
+}
+
+/* 6. Keyboard hint badge styling */
+kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  background-color: #f1f3f4;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 11px;
+  color: #1f1f1f;
+  font-weight: 500;
 }
