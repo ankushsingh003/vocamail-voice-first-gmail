@@ -225,6 +225,233 @@
   min-height: 160px;
 }
 
+.smart-reply-section {
+  margin: 0 24px 8px 24px;
+  border: 1px solid #e8eaed;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fafbff;
+}
+
+.smart-reply-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid #e8eaed;
+  background: #f0f4ff;
+}
+
+.smart-reply-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0b57d0;
+}
+
+.smart-reply-load-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #0b57d0;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.smart-reply-load-btn:hover:not(:disabled) {
+  background-color: #0842a0;
+}
+
+.smart-reply-load-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.smart-reply-refresh {
+  background-color: #5e5e5e;
+  font-size: 12px;
+}
+
+.smart-reply-refresh:hover:not(:disabled) {
+  background-color: #3c3c3c;
+}
+
+.smart-reply-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e8eaed;
+}
+
+.smart-reply-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  padding: 10px 14px;
+  min-width: 180px;
+  max-width: 260px;
+  flex: 1;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  text-align: left;
+  background: #fff;
+}
+
+.smart-reply-pill:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.smart-reply-pill.active {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.smart-reply-pill--accept {
+  border-color: #34a853;
+  background: #f0faf4;
+}
+
+.smart-reply-pill--accept:hover,
+.smart-reply-pill--accept.active {
+  border-color: #1e8e3e;
+  background: #e6f7ec;
+}
+
+.smart-reply-pill--reschedule {
+  border-color: #f9ab00;
+  background: #fffbf0;
+}
+
+.smart-reply-pill--reschedule:hover,
+.smart-reply-pill--reschedule.active {
+  border-color: #e37400;
+  background: #fff4e0;
+}
+
+.smart-reply-pill--decline {
+  border-color: #d93025;
+  background: #fff4f4;
+}
+
+.smart-reply-pill--decline:hover,
+.smart-reply-pill--decline.active {
+  border-color: #b31412;
+  background: #ffe9e8;
+}
+
+.pill-emoji {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.pill-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+.pill-preview {
+  font-size: 11px;
+  color: #5e5e5e;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.smart-reply-voice-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+}
+
+.smart-reply-voice-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #dadce0;
+  border-radius: 24px;
+  padding: 6px 14px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.smart-reply-voice-input-wrap:focus-within {
+  border-color: #0b57d0;
+  box-shadow: 0 0 0 2px rgba(11,87,208,0.15);
+}
+
+.voice-input-icon {
+  flex-shrink: 0;
+}
+
+.smart-reply-voice-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 13px;
+  color: #1f1f1f;
+  background: transparent;
+}
+
+.smart-reply-voice-input::placeholder {
+  color: #9aa0a6;
+}
+
+.smart-reply-draft-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #0b57d0;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 150ms ease;
+}
+
+.smart-reply-draft-btn:hover:not(:disabled) {
+  background-color: #0842a0;
+}
+
+.smart-reply-draft-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.smart-reply-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .detail-reply-row {
   padding: 16px 24px 32px 76px;
   display: flex;
