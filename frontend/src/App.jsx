@@ -29,6 +29,7 @@ import GmailSidebar from "./components/GmailSidebar";
 import GmailEmailTable from "./components/GmailEmailTable";
 import GmailDetailView from "./components/GmailDetailView";
 import GmailComposeModal from "./components/GmailComposeModal";
+import BriefingModal from "./components/BriefingModal";
 import LoginCard from "./components/LoginCard";
 
 // Microphone capture utility (used by both search mic and compose dictation)
@@ -55,6 +56,11 @@ export default function App() {
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [composeDraft, setComposeDraft] = useState({ to: "", subject: "", body: "" });
   const [isSending, setIsSending] = useState(false);
+
+  // ---- Morning Executive Briefing State ----
+  const [isBriefingOpen, setIsBriefingOpen] = useState(false);
+  const [briefingData, setBriefingData] = useState(null);
+  const [isLoadingBriefing, setIsLoadingBriefing] = useState(false);
 
   // ---- Voice Recording State (shared by search mic & compose dictation) ----
   // voiceTarget: "search" = mic in search bar, "compose" = dictate in compose window
@@ -274,6 +280,29 @@ export default function App() {
   }
 
   // --------------------------------------------------------------------------
+  // 5b. Morning Executive Briefing
+  // --------------------------------------------------------------------------
+  async function handleOpenBriefing() {
+    setIsBriefingOpen(true);
+    if (briefingData) return; // Keep cached briefing if already generated in this session
+
+    setIsLoadingBriefing(true);
+    try {
+      const res = await fetch("/api/briefing", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setBriefingData(data);
+      } else {
+        console.error("[VocaMail] Failed to load briefing:", res.status);
+      }
+    } catch (err) {
+      console.error("[VocaMail] Briefing fetch error:", err);
+    } finally {
+      setIsLoadingBriefing(false);
+    }
+  }
+
+  // --------------------------------------------------------------------------
   // 6. Whisper Voice Pipeline
   //    Used by both the Search bar mic and the Compose dictation button.
   //    target: "search" or "compose"
@@ -407,6 +436,7 @@ export default function App() {
         onToggleVoice={handleToggleSearchVoice}
         isRecording={isRecording && voiceTarget === "search"}
         onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
+        onOpenBriefing={handleOpenBriefing}
         onLogout={() => {
           fetch("/logout").then(() => setIsLoggedIn(false));
         }}
@@ -468,6 +498,15 @@ export default function App() {
         onSend={handleSendEmail}
         onVoiceDictate={handleToggleComposeVoice}
         isVoiceActive={isRecording && voiceTarget === "compose"}
+      />
+
+      {/* 4. Morning Executive Briefing Podcast Modal */}
+      <BriefingModal
+        isOpen={isBriefingOpen}
+        onClose={() => setIsBriefingOpen(false)}
+        briefingData={briefingData}
+        isLoading={isLoadingBriefing}
+        onOpenEmail={handleOpenEmail}
       />
     </div>
   );
