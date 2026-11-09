@@ -1,21 +1,3 @@
-/**
- * frontend/src/components/GmailComposeModal.jsx — Floating Gmail Compose Dialog
- * ==============================================================================
- * Renders an authentic floating compose dialog in the bottom-right corner,
- * fully styled like modern Gmail with:
- *
- * 1. Title bar with Minimize, Expand, and Close buttons.
- * 2. Voice Helper Bar (Senior Developer Voice Function):
- *    - Allows one-click voice dictation into the email body or voice composing.
- * 3. Form fields:
- *    - "To" recipient email input.
- *    - "Subject" line input.
- *    - Message body textarea.
- * 4. Bottom action bar:
- *    - Blue "Send" button (supports Ctrl+Enter shortcut).
- *    - Gmail toolbar icons: formatting, attachment, link, emoji, delete draft.
- */
-
 import React, { useState, useEffect } from "react";
 import "./GmailComposeModal.css";
 
@@ -36,7 +18,6 @@ export default function GmailComposeModal({
   const [localBody, setLocalBody] = useState(currentDraft.body || "");
   const [isMinimized, setIsMinimized] = useState(false);
 
-  // Sync state whenever draft or initialDraft prop updates (e.g. from Whisper voice transcription)
   useEffect(() => {
     const src = draft || initialDraft;
     if (src) {
@@ -67,7 +48,6 @@ export default function GmailComposeModal({
     if (onDraftChange) onDraftChange({ to, subject, body: val });
   }
 
-  // Handle send action
   function handleFormSubmit(e) {
     if (e) e.preventDefault();
     if (!to.trim()) {
@@ -79,7 +59,6 @@ export default function GmailComposeModal({
     }
   }
 
-  // Keyboard shortcut: Ctrl + Enter sends email (standard Gmail shortcut)
   function handleKeyDown(e) {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
@@ -94,7 +73,7 @@ export default function GmailComposeModal({
       aria-label="New Message Dialog"
       onKeyDown={handleKeyDown}
     >
-      {/* 1. Header Bar */}
+      {}
       <header
         className="compose-header"
         onClick={() => isMinimized && setIsMinimized(false)}
@@ -104,7 +83,7 @@ export default function GmailComposeModal({
         </span>
 
         <div className="compose-header-actions" onClick={(e) => e.stopPropagation()}>
-          {/* Minimize / restore button */}
+          {}
           <button
             type="button"
             className="compose-tool-btn"
@@ -115,7 +94,7 @@ export default function GmailComposeModal({
             {isMinimized ? "🗖" : "—"}
           </button>
 
-          {/* Close draft window */}
+          {}
           <button
             type="button"
             className="compose-tool-btn"
@@ -128,10 +107,10 @@ export default function GmailComposeModal({
         </div>
       </header>
 
-      {/* When minimized, hide content */}
+      {}
       {!isMinimized && (
         <>
-          {/* 2. Senior-Developer Voice Helper Bar */}
+          {}
           <div className="compose-voice-helper" role="region" aria-label="Voice compose helper">
             <div className="compose-voice-helper-left">
               <span>🎙️ Voice Compose</span>
@@ -155,7 +134,7 @@ export default function GmailComposeModal({
             )}
           </div>
 
-          {/* 3. "To" Recipient Row */}
+          {}
           <div className="compose-field-row">
             <label htmlFor="compose-to" className="compose-field-label">
               To
@@ -171,7 +150,7 @@ export default function GmailComposeModal({
             />
           </div>
 
-          {/* 4. Subject Line Row */}
+          {}
           <div className="compose-field-row">
             <label htmlFor="compose-subject" className="compose-field-label">
               Subject
@@ -186,7 +165,7 @@ export default function GmailComposeModal({
             />
           </div>
 
-          {/* 5. Message Body Area */}
+          {}
           <div className="compose-body-area">
             <textarea
               id="compose-body"
@@ -198,7 +177,7 @@ export default function GmailComposeModal({
             />
           </div>
 
-          {/* 6. Footer Action Bar */}
+          {}
           <footer className="compose-footer">
             <div className="compose-footer-left">
               <div className="compose-send-group">
@@ -219,7 +198,7 @@ export default function GmailComposeModal({
                 </button>
               </div>
 
-              {/* Formatting and attachment buttons */}
+              {}
               <div className="compose-footer-tools" aria-label="Formatting options">
                 <button
                   type="button"
@@ -256,7 +235,7 @@ export default function GmailComposeModal({
               </div>
             </div>
 
-            {/* Trash / Discard Draft Button */}
+            {}
             <div className="compose-footer-right">
               <button
                 type="button"
