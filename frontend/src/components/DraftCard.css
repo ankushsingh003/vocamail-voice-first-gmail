@@ -1,10 +1,3 @@
-/* ===========================================================================
-   frontend/src/components/DraftCard.css — Live Voice Email Draft Visualizer
-   ===========================================================================
-   When the user speaks "compose email", this glowing card appears on screen
-   and live-updates as they dictate the recipient, subject, and message.
-   =========================================================================== */
-
 .draft-card {
   width: 100%;
   max-width: 580px;
@@ -118,4 +111,3 @@
   color: var(--text-secondary);
   text-align: center;
 }
-
