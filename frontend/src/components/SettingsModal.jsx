@@ -1,12 +1,3 @@
-/**
- * frontend/src/components/SettingsModal.jsx — Authentic Gmail Quick Settings Drawer
- * =================================================================================
- * Opens a right-side drawer panel with Gmail preferences:
- *   - Voice & Accessibility settings (voice feedback speed, mic beep tones)
- *   - Density preferences (Default, Comfortable, Compact)
- *   - Inbox category management
- */
-
 import React from "react";
 import "./SettingsModal.css";
 
@@ -21,7 +12,7 @@ export default function SettingsModal({
   return (
     <div className="settings-drawer-backdrop" onClick={onClose} role="dialog" aria-modal="true">
       <div className="settings-drawer" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
+        {}
         <div className="settings-header">
           <h2 className="settings-title">Quick settings</h2>
           <button
@@ -34,9 +25,9 @@ export default function SettingsModal({
           </button>
         </div>
 
-        {/* Settings Body */}
+        {}
         <div className="settings-body">
-          {/* Voice & Accessibility Section */}
+          {}
           <div className="settings-section">
             <span className="settings-section-label">Voice & Accessibility</span>
 
@@ -75,7 +66,7 @@ export default function SettingsModal({
             </div>
           </div>
 
-          {/* Density Section */}
+          {}
           <div className="settings-section">
             <span className="settings-section-label">Density</span>
             {["default", "comfortable", "compact"].map((d) => (
