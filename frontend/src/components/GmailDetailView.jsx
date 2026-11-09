@@ -204,7 +204,11 @@ export default function GmailDetailView({
 
       {/* 5. Email Body Content */}
       <section className="detail-body-card" tabIndex="0" aria-label="Email message body">
-        {email.body && email.body.trim().length > 0 ? email.body : email.snippet || "(No content)"}
+        {(email.body && email.body.trim().length > 0)
+          ? email.body
+          : (email.body_preview && email.body_preview.trim().length > 0)
+            ? email.body_preview
+            : email.snippet || "(No content)"}
       </section>
 
       {/* 6. Quick Reply & Forward Pill Buttons */}
