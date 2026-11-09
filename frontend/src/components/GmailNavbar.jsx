@@ -1,35 +1,6 @@
-/**
- * frontend/src/components/GmailNavbar.jsx — Authentic Gmail Top Navigation Bar
- * ==============================================================================
- * Matches the official Google Gmail top header layout exactly:
- *
- * 1. Left Side:
- *    - Hamburger menu button to toggle sidebar collapse.
- *    - Official Google-colored Gmail envelope SVG logo + "VocaMail" title.
- *
- * 2. Center Search Bar (Senior Dev Voice Integration):
- *    - Rounded pill search input ("Search mail").
- *    - Dedicated Voice Search Microphone: clicking activates Whisper voice search.
- *    - Tune / Filter sliders icon.
- *
- * 3. Right Side:
- *    - Help ? icon.
- *    - Settings ⚙ gear icon.
- *    - Google Apps 9-dot Waffle Menu: opens a full dropdown panel with all
- *      Google services — Account, Drive, Gmail, YouTube, Gemini, Maps, Search,
- *      Calendar, Chrome, Meet, Forms, Docs, Sheets, Slides, Photos, Translate,
- *      Contacts, Keep + a Gemini banner promo — identical to the real Gmail.
- *    - User profile avatar circle.
- *    - Sign Out button.
- */
-
 import React, { useState, useEffect, useRef } from "react";
 import "./GmailNavbar.css";
 
-// ---------------------------------------------------------------------------
-// Google Apps Data — using Google's official product icons via gstatic CDN
-// Matches the real Gmail 9-dot waffle panel 100% pixel-perfect.
-// ---------------------------------------------------------------------------
 const FAVORITE_APPS = [
   {
     id: "account",
@@ -87,7 +58,6 @@ const FAVORITE_APPS = [
   },
 ];
 
-// More Google apps (shown below the favorites in the dropdown)
 const MORE_APPS = [
   {
     id: "meet",
@@ -145,9 +115,6 @@ const MORE_APPS = [
   },
 ];
 
-// ---------------------------------------------------------------------------
-// Main GmailNavbar Component
-// ---------------------------------------------------------------------------
 export default function GmailNavbar({
   searchQuery = "",
   onSearchChange,
@@ -173,7 +140,6 @@ export default function GmailNavbar({
   const appsRef = useRef(null);
   const filterRef = useRef(null);
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(e) {
       if (appsRef.current && !appsRef.current.contains(e.target)) {
@@ -201,7 +167,6 @@ export default function GmailNavbar({
     setIsFilterOpen(false);
   }
 
-  // Close dropdown on Escape key
   useEffect(() => {
     function handleEsc(e) {
       if (e.key === "Escape") setIsAppsOpen(false);
@@ -217,12 +182,11 @@ export default function GmailNavbar({
     }
   }
 
-  // Get first letter of user's name for the avatar circle
   const avatarLetter = (userName || "U").charAt(0).toUpperCase();
 
   return (
     <header className="gmail-header" role="banner">
-      {/* 1. Left: Hamburger + Google VocaMail Logo */}
+      {}
       <div className="header-left">
         <button
           type="button"
@@ -236,7 +200,7 @@ export default function GmailNavbar({
         </button>
 
         <div className="brand-link" tabIndex={0} role="link" aria-label="vocamail Home">
-          {/* Authentic Official Google Gmail Logo */}
+          {}
           <img
             src="https://ssl.gstatic.com/images/branding/product/2x/gmail_2020q4_48dp.png"
             alt="Gmail"
@@ -249,10 +213,10 @@ export default function GmailNavbar({
         </div>
       </div>
 
-      {/* 2. Center: Gmail Search Bar with Embedded Voice Mic */}
+      {}
       <div className="header-center">
         <div className="gmail-search-box" role="search">
-          {/* Search Glass Icon */}
+          {}
           <button
             type="button"
             className="icon-btn"
@@ -264,7 +228,7 @@ export default function GmailNavbar({
             </svg>
           </button>
 
-          {/* Search Input Field */}
+          {}
           <input
             type="text"
             className="search-input"
@@ -275,7 +239,7 @@ export default function GmailNavbar({
             aria-label="Search mail"
           />
 
-          {/* Senior Developer Voice Mic embedded in Search Bar */}
+          {}
           <button
             type="button"
             className={`voice-search-btn ${isRecording ? "recording" : ""}`}
@@ -290,7 +254,7 @@ export default function GmailNavbar({
             </svg>
           </button>
 
-          {/* Search Options / Tune Icon with Popup Filter Box */}
+          {}
           <div className="search-filter-wrapper" ref={filterRef}>
             <button
               type="button"
@@ -304,7 +268,7 @@ export default function GmailNavbar({
               </svg>
             </button>
 
-            {/* Filter Dropdown Card */}
+            {}
             {isFilterOpen && (
               <form className="search-filter-dropdown" onSubmit={handleFilterSubmit}>
                 <div className="search-filter-row">
@@ -375,9 +339,9 @@ export default function GmailNavbar({
         </div>
       </div>
 
-      {/* 3. Right: Support, Settings, Google Apps Grid, User Avatar */}
+      {}
       <div className="header-right">
-        {/* ⚡ Morning Executive Briefing Button */}
+        {}
         {onOpenBriefing && (
           <button
             type="button"
@@ -391,7 +355,7 @@ export default function GmailNavbar({
           </button>
         )}
 
-        {/* Support Question Mark Button */}
+        {}
         <button
           type="button"
           className="icon-btn"
@@ -404,7 +368,7 @@ export default function GmailNavbar({
           </svg>
         </button>
 
-        {/* Settings Gear */}
+        {}
         <button
           type="button"
           className="icon-btn"
@@ -417,11 +381,7 @@ export default function GmailNavbar({
           </svg>
         </button>
 
-        {/* ============================================================
-            Google Apps 9-Dot Waffle Menu (Working Dropdown!)
-            Clicking this opens the full Google apps panel exactly like
-            the real Gmail — with all Google services as clickable tiles.
-            ============================================================ */}
+        {}
         <div className="google-apps-wrapper" ref={appsRef}>
           <button
             type="button"
@@ -437,14 +397,14 @@ export default function GmailNavbar({
             </svg>
           </button>
 
-          {/* Google Apps Dropdown Panel */}
+          {}
           {isAppsOpen && (
             <div
               className="google-apps-dropdown"
               role="dialog"
               aria-label="Google apps"
             >
-              {/* Panel Header */}
+              {}
               <div className="apps-dropdown-header">
                 <span className="apps-dropdown-title">Your favorites</span>
                 <button
@@ -460,7 +420,7 @@ export default function GmailNavbar({
                 </button>
               </div>
 
-              {/* Favorites Apps Grid (3×3) */}
+              {}
               <div className="apps-grid">
                 {FAVORITE_APPS.map((app) => (
                   <a
@@ -486,7 +446,7 @@ export default function GmailNavbar({
                 ))}
               </div>
 
-              {/* Gemini Promo Banner */}
+              {}
               {showPromo && (
                 <div className="apps-promo-banner">
                   <div className="apps-promo-text">
@@ -523,10 +483,10 @@ export default function GmailNavbar({
                 </div>
               )}
 
-              {/* Divider */}
+              {}
               <div className="apps-dropdown-divider" />
 
-              {/* More Google Apps Grid */}
+              {}
               <div className="apps-section-label">More Google apps</div>
               <div className="apps-grid">
                 {MORE_APPS.map((app) => (
@@ -556,7 +516,7 @@ export default function GmailNavbar({
           )}
         </div>
 
-        {/* User Account Avatar */}
+        {}
         <button
           type="button"
           className="profile-avatar-btn"
@@ -566,7 +526,7 @@ export default function GmailNavbar({
           {avatarLetter}
         </button>
 
-        {/* Sign Out Button */}
+        {}
         {onLogout && (
           <button
             type="button"
