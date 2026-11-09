@@ -1,10 +1,3 @@
-/* ==========================================================================
-   frontend/src/components/VoiceAssistantHUD.css
-   Senior Developer Voice Assistant Floating Dock (HUD) with live waveform,
-   ARIA live region status subtitles, and audio feedback player.
-   ========================================================================== */
-
-/* 1. Main floating dock container at bottom-right of viewport */
 .voice-hud-container {
   position: fixed;
   bottom: 24px;
@@ -15,10 +8,9 @@
   align-items: flex-end;
   gap: 8px;
   font-family: "Google Sans", Roboto, sans-serif;
-  pointer-events: none; /* children enable pointer events */
+  pointer-events: none; 
 }
 
-/* 2. Main floating interactive pill */
 .voice-hud-pill {
   pointer-events: auto;
   display: flex;
@@ -40,7 +32,6 @@
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
 }
 
-/* Recording State: glowing red ring */
 .voice-hud-pill.recording {
   background: linear-gradient(135deg, #b3261e 0%, #8c1d18 100%);
   animation: glowRed 1.4s infinite alternate;
@@ -51,17 +42,14 @@
   100% { box-shadow: 0 0 24px rgba(179, 38, 30, 0.9); }
 }
 
-/* Processing State: blue pulse */
 .voice-hud-pill.processing {
   background: linear-gradient(135deg, #0b57d0 0%, #0842a0 100%);
 }
 
-/* Speaking State: emerald green glow */
 .voice-hud-pill.speaking {
   background: linear-gradient(135deg, #0f5223 0%, #137333 100%);
 }
 
-/* 3. Circular mic / state icon */
 .voice-hud-mic-circle {
   width: 32px;
   height: 32px;
@@ -73,7 +61,6 @@
   flex-shrink: 0;
 }
 
-/* 4. Animated soundwave equalizer bars for speaking & listening */
 .voice-equalizer {
   display: flex;
   align-items: center;
@@ -99,7 +86,6 @@
   50% { transform: scaleY(1); }
 }
 
-/* 5. Center text status & subtitle */
 .voice-hud-text-area {
   display: flex;
   flex-direction: column;
@@ -121,7 +107,6 @@
   margin-top: 2px;
 }
 
-/* 6. Spacebar shortcut hint badge */
 .voice-hud-badge {
   background-color: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -133,7 +118,6 @@
   text-transform: uppercase;
 }
 
-/* 7. Collapsible Voice Command Help & Subtitle Card */
 .voice-hud-card {
   pointer-events: auto;
   width: 340px;

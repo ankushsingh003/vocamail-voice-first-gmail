@@ -1,13 +1,3 @@
-/* ===========================================================================
-   frontend/src/components/StatusBadge.css — LED Status Indicator Styling
-   ===========================================================================
-   Styles the glowing pill indicator that shows what the assistant is doing:
-     - Idle: Quiet grey LED dot
-     - Listening: Flashing red LED dot (mic recording)
-     - Processing: Amber spinning LED dot (Whisper/Gmail working)
-     - Speaking: Green glowing LED dot (assistant talking)
-   =========================================================================== */
-
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -29,26 +19,22 @@
   transition: background var(--transition);
 }
 
-/* Idle Mode */
 .status-idle .status-dot {
   background: var(--text-muted);
 }
 
-/* Listening Mode: Pulsing red dot */
 .status-listening .status-dot {
   background: var(--error);
   box-shadow: 0 0 10px var(--error);
   animation: blink 1s ease-in-out infinite;
 }
 
-/* Processing Mode: Glowing amber spinner */
 .status-processing .status-dot {
   background: var(--warning);
   box-shadow: 0 0 10px var(--warning);
   animation: spin-dot 1s linear infinite;
 }
 
-/* Speaking Mode: Blinking emerald dot */
 .status-speaking .status-dot {
   background: var(--success);
   box-shadow: 0 0 10px var(--success);
