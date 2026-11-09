@@ -1,15 +1,3 @@
-/**
- * frontend/src/components/EmailList.jsx — Gmail Inbox Message List Component
- * ===========================================================================
- * Think of this component like the physical letter tray.
- * 
- * Features:
- *   1. "Fetch Latest Emails" button: Triggers a call to our Flask `/api/inbox` endpoint.
- *   2. Renders each email in a clean, legible card showing sender, subject, and preview.
- *   3. Adds an accented violet highlight on the left if the email is unread.
- *   4. Fully accessible with `role="article"` and `aria-label` for screen readers.
- */
-
 import React, { useState } from "react";
 import "./EmailList.css";
 
@@ -63,14 +51,14 @@ export default function EmailList({ onAnnounce }) {
         {isLoading ? "Fetching…" : "Fetch Latest Emails"}
       </button>
 
-      {/* Error notification */}
+      {}
       {error && (
         <p className="email-error" role="alert">
           Error: {error}
         </p>
       )}
 
-      {/* Messages list */}
+      {}
       <div className="inbox-list" aria-live="polite" aria-label="Email list">
         {isLoading && <p className="email-loading">Fetching your latest emails…</p>}
 
