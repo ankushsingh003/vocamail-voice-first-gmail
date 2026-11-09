@@ -467,16 +467,15 @@ export default function App() {
         searchQuery={searchQuery}
         onSearchChange={(q) => setSearchQuery(q)}
         onSearchSubmit={(q) => loadEmails(activeFolder, q)}
-        onVoiceSearch={() => {
+        onToggleVoice={() => {
           if (voiceState === "recording") handleStopListening();
           else handleStartListening();
         }}
-        isListening={voiceState === "recording"}
+        isRecording={voiceState === "recording"}
         onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
         onLogout={() => {
           fetch("/logout").then(() => setIsLoggedIn(false));
         }}
-        userEmail={userProfile.email}
         userName={userProfile.name}
       />
 
@@ -484,13 +483,13 @@ export default function App() {
       <div className="gmail-body-layout">
         {/* Left Sidebar */}
         <GmailSidebar
-          activeFolder={activeFolder}
+          currentFolder={activeFolder}
           onSelectFolder={(folder) => {
             setActiveFolder(folder);
             setSelectedEmail(null);
             setSearchQuery("");
           }}
-          onComposeClick={() => handleOpenCompose()}
+          onOpenCompose={() => handleOpenCompose()}
           unreadCount={emails.filter((m) => m.is_unread).length}
           isCollapsed={isSidebarCollapsed}
         />
