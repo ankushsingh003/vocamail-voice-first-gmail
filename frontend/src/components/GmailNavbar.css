@@ -58,17 +58,19 @@
   cursor: pointer;
 }
 
-.brand-logo-svg {
-  width: 30px;
-  height: 24px;
+.brand-logo-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }
 
 .brand-title {
-  font-family: 'Google Sans', sans-serif;
+  font-family: 'Google Sans', Roboto, -apple-system, sans-serif;
   font-size: 1.35rem;
   font-weight: 500;
   color: var(--gm-text-main);
   letter-spacing: -0.02em;
+  text-transform: lowercase;
 }
 
 .voice-badge-tag {
