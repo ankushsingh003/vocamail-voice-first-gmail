@@ -1,13 +1,3 @@
-/* ===========================================================================
-   frontend/src/index.css — Gmail Design Tokens, Typography & Base Styles
-   ===========================================================================
-   Matches the official Google Gmail web interface aesthetic:
-     1. Modern Material You color tokens (light blue pills, neutral surfaces).
-     2. Google Sans / Roboto typography.
-     3. Dedicated voice assistant accents (electric violet glowing badge).
-     4. High-contrast accessibility tokens (:focus-visible and .sr-only).
-   =========================================================================== */
-
 @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&display=swap');
 
 *, *::before, *::after {
@@ -17,7 +7,7 @@
 }
 
 :root {
-  /* Official Gmail Light Theme Colors */
+  
   --gm-bg:                 #f6f8fc;
   --gm-surface:            #ffffff;
   --gm-header-bg:          #f6f8fc;
@@ -44,26 +34,22 @@
   --gm-star-gold:          #f4b400;
   --gm-star-empty:         #c4c7c5;
 
-  /* Voice Assistant Accents */
   --voice-accent:          #7c3aed;
   --voice-accent-light:    #a78bfa;
   --voice-glow:            rgba(124, 58, 237, 0.35);
 
-  /* Spacing Scale */
   --sp-xs:  4px;
   --sp-sm:  8px;
   --sp-md:  16px;
   --sp-lg:  24px;
   --sp-xl:  32px;
 
-  /* Border Radii */
   --r-sm:   4px;
   --r-md:   8px;
   --r-lg:   16px;
   --r-pill: 24px;
   --r-full: 9999px;
 
-  /* Transitions */
   --transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -88,9 +74,6 @@ body {
   flex-direction: column;
 }
 
-/* ---------------------------------------------------------------------------
-   Accessibility Utilities
-   --------------------------------------------------------------------------- */
 .sr-only {
   position: absolute;
   width: 1px;
