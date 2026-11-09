@@ -112,20 +112,24 @@ def _summarise_body(text: str, max_chars: int = 300) -> str:
 # 2. For each ID, downloads the full details (sender, subject, date, body).
 # 3. Checks if the email is still marked as UNREAD.
 # 4. Returns a clean, organized list of dictionaries ready for our voice engine.
-def list_inbox(creds: Credentials, max_results: int = None) -> list[dict]:
+def list_inbox(creds: Credentials, max_results: int = None, label_ids: list[str] = None) -> list[dict]:
     """
-    Fetches your recent inbox emails and packs them into a clean, easy-to-use list.
+    Fetches your recent emails from the given folder/label (defaults to INBOX).
+    Packs them into a clean, easy-to-use list with sender, subject, date, and preview.
     """
     if max_results is None:
         max_results = config.INBOX_MAX_RESULTS
 
+    if label_ids is None:
+        label_ids = ["INBOX"]
+
     service = _get_service(creds)
 
-    # 1. Ask Gmail: "What are the IDs of the latest 5 emails in the INBOX?"
+    # 1. Ask Gmail for the message IDs matching the requested label
     result = (
         service.users()
         .messages()
-        .list(userId="me", labelIds=["INBOX"], maxResults=max_results)
+        .list(userId="me", labelIds=label_ids, maxResults=max_results)
         .execute()
     )
 
@@ -136,33 +140,41 @@ def list_inbox(creds: Credentials, max_results: int = None) -> list[dict]:
     # 2. Loop through each message ID and fetch its full contents
     inbox = []
     for meta in messages_meta:
-        msg = (
-            service.users()
-            .messages()
-            .get(userId="me", id=meta["id"], format="full")
-            .execute()
-        )
+        try:
+            msg = (
+                service.users()
+                .messages()
+                .get(userId="me", id=meta["id"], format="full")
+                .execute()
+            )
 
-        headers   = msg.get("payload", {}).get("headers", [])
-        label_ids = msg.get("labelIds", [])
+            headers    = msg.get("payload", {}).get("headers", [])
+            msg_labels = msg.get("labelIds", [])
 
-        # Clean up the body text
-        body_text    = _decode_body(msg.get("payload", {}))
-        body_preview = _summarise_body(body_text)
+            # Clean up the body text
+            body_text    = _decode_body(msg.get("payload", {}))
+            body_preview = _summarise_body(body_text)
 
-        # Pack the clean email into our organized list
-        inbox.append(
-            {
-                "id":           msg["id"],
-                "thread_id":    msg.get("threadId", ""),
-                "from":         _get_header(headers, "From"),
-                "subject":      _get_header(headers, "Subject") or "(no subject)",
-                "snippet":      msg.get("snippet", ""),
-                "date":         _get_header(headers, "Date"),
-                "is_unread":    "UNREAD" in label_ids,
-                "body_preview": body_preview,
-            }
-        )
+            # Pack the clean email into our organized list
+            inbox.append(
+                {
+                    "id":           msg["id"],
+                    "thread_id":    msg.get("threadId", ""),
+                    "from":         _get_header(headers, "From"),
+                    "to":           _get_header(headers, "To"),
+                    "subject":      _get_header(headers, "Subject") or "(no subject)",
+                    "snippet":      msg.get("snippet", ""),
+                    "date":         _get_header(headers, "Date"),
+                    "is_unread":    "UNREAD" in msg_labels,
+                    "is_starred":   "STARRED" in msg_labels,
+                    "body":         body_text,
+                    "body_preview": body_preview,
+                    "labels":       msg_labels,
+                }
+            )
+        except Exception as item_err:
+            print(f"[VocaMail] Skipping unreadable message {meta['id']}: {item_err}")
+            continue
 
     return inbox
 
@@ -372,5 +384,64 @@ def mark_as_read(creds: Credentials, msg_id: str) -> bool:
         return True
     except Exception as e:
         raise RuntimeError(f"Failed to mark email as read: {e}")
+
+
+# ---------------------------------------------------------------------------
+# 12. Toggle Star on an Email (toggle_star)
+# ---------------------------------------------------------------------------
+# When the user clicks the gold star icon in the Gmail table (or says "star email 1"),
+# this function adds or removes the official Google 'STARRED' label.
+def toggle_star(creds: Credentials, msg_id: str, star: bool = True) -> bool:
+    """
+    Stars or unstars an email in Gmail.
+    """
+    if not msg_id:
+        raise ValueError("Cannot toggle star: missing message ID.")
+
+    service = _get_service(creds)
+    body = {"addLabelIds": ["STARRED"]} if star else {"removeLabelIds": ["STARRED"]}
+
+    try:
+        service.users().messages().modify(userId="me", id=msg_id, body=body).execute()
+        return True
+    except Exception as e:
+        raise RuntimeError(f"Failed to toggle star: {e}")
+
+
+# ---------------------------------------------------------------------------
+# 13. Fetch Single Email Detail (get_message)
+# ---------------------------------------------------------------------------
+# When a user clicks on an email row in the inbox list to read it, this function
+# downloads the full email, decodes the body, and formats sender and timestamps.
+def get_message(creds: Credentials, msg_id: str) -> dict:
+    """
+    Fetches the complete content of a single email for the reading pane.
+    """
+    if not msg_id:
+        raise ValueError("Cannot fetch email: missing message ID.")
+
+    service = _get_service(creds)
+    try:
+        msg = service.users().messages().get(userId="me", id=msg_id, format="full").execute()
+        headers    = msg.get("payload", {}).get("headers", [])
+        msg_labels = msg.get("labelIds", [])
+        body_text  = _decode_body(msg.get("payload", {}))
+
+        return {
+            "id":         msg["id"],
+            "thread_id":  msg.get("threadId", ""),
+            "from":       _get_header(headers, "From"),
+            "to":         _get_header(headers, "To"),
+            "subject":    _get_header(headers, "Subject") or "(no subject)",
+            "date":       _get_header(headers, "Date"),
+            "snippet":    msg.get("snippet", ""),
+            "is_unread":  "UNREAD" in msg_labels,
+            "is_starred": "STARRED" in msg_labels,
+            "body":       body_text,
+            "labels":     msg_labels,
+        }
+    except Exception as e:
+        raise RuntimeError(f"Failed to fetch email detail: {e}")
+
 
 
