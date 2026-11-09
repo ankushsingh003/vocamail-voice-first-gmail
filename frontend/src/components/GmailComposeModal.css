@@ -1,0 +1,239 @@
+/* ==========================================================================
+   frontend/src/components/GmailComposeModal.css
+   Authentic Gmail Floating Compose Dialog with Voice Dictation Integration
+   ========================================================================== */
+
+/* 1. Floating modal container docked at bottom-right (exact Gmail style) */
+.gmail-compose-window {
+  position: fixed;
+  bottom: 0;
+  right: 80px;
+  width: 540px;
+  height: 520px;
+  max-height: calc(100vh - 100px);
+  background-color: #ffffff;
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 8px 10px 1px rgba(0, 0, 0, 0.14),
+              0 3px 14px 2px rgba(0, 0, 0, 0.12),
+              0 5px 5px -3px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  z-index: 999;
+  border: 1px solid #dadce0;
+  border-bottom: none;
+  font-family: Roboto, Arial, sans-serif;
+  transition: height 200ms ease;
+}
+
+/* Minimized mode shrinks to bottom bar */
+.gmail-compose-window.minimized {
+  height: 40px;
+  overflow: hidden;
+}
+
+/* 2. Compose Header bar */
+.compose-header {
+  height: 40px;
+  background-color: #f2f6fc;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px 0 16px;
+  user-select: none;
+  cursor: pointer;
+}
+
+.compose-header-title {
+  font-family: "Google Sans", Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f1f1f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compose-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.compose-tool-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #444746;
+  font-size: 16px;
+  transition: background-color 150ms ease;
+}
+
+.compose-tool-btn:hover {
+  background-color: #e1e3e1;
+  color: #1f1f1f;
+}
+
+/* 3. Voice Dictation Helper Bar (Senior Developer Voice Function) */
+.compose-voice-helper {
+  background-color: #e8f0fe;
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #d3e3fd;
+  font-size: 12px;
+  color: #0b57d0;
+}
+
+.compose-voice-helper-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.compose-voice-btn-pill {
+  border: none;
+  background-color: #0b57d0;
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.compose-voice-btn-pill:hover {
+  background-color: #0842a0;
+}
+
+.compose-voice-btn-pill.recording {
+  background-color: #b3261e;
+  animation: pulseMic 1s infinite alternate;
+}
+
+@keyframes pulseMic {
+  0% { opacity: 0.9; transform: scale(0.98); }
+  100% { opacity: 1; transform: scale(1.02); }
+}
+
+/* 4. Form inputs (To, Subject) */
+.compose-field-row {
+  display: flex;
+  align-items: center;
+  padding: 4px 16px;
+  border-bottom: 1px solid #f1f3f4;
+  min-height: 38px;
+}
+
+.compose-field-label {
+  font-size: 13px;
+  color: #444746;
+  width: 50px;
+  flex-shrink: 0;
+}
+
+.compose-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 13px;
+  color: #1f1f1f;
+  background: transparent;
+  font-family: inherit;
+}
+
+.compose-input::placeholder {
+  color: #747775;
+}
+
+/* 5. Message Body Textarea */
+.compose-body-area {
+  flex: 1;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.compose-textarea {
+  width: 100%;
+  flex: 1;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1f1f1f;
+  background: transparent;
+}
+
+/* 6. Bottom Action Footer */
+.compose-footer {
+  height: 52px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #f1f3f4;
+}
+
+.compose-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Send pill button matching real Gmail */
+.compose-send-group {
+  display: inline-flex;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3);
+}
+
+.compose-send-btn {
+  background-color: #0b57d0;
+  color: #ffffff;
+  border: none;
+  padding: 0 20px;
+  height: 36px;
+  font-family: "Google Sans", Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 150ms ease;
+}
+
+.compose-send-btn:hover:not(:disabled) {
+  background-color: #0842a0;
+}
+
+.compose-send-btn:disabled {
+  background-color: #a8c7fa;
+  cursor: not-allowed;
+}
+
+.compose-footer-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.compose-footer-right {
+  display: flex;
+  align-items: center;
+}
