@@ -42,6 +42,11 @@ export default defineConfig({
         target: "http://127.0.0.1:5000",
         changeOrigin: true,
       },
+      // Forward static assets served by Flask (TTS audio MP3 files for the podcast player)
+      "/static": {
+        target: "http://127.0.0.1:5000",
+        changeOrigin: true,
+      },
     },
   },
 });
