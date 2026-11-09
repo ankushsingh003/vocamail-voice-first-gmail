@@ -1,22 +1,9 @@
-"""
-tests/test_reader.py — Speech Output & Narration Unit Tests
-============================================================
-Verifies that email dictionaries and help text are formatted into
-clean, natural, easy-to-listen-to spoken English sentences (gmail/reader.py).
-
-How to run:
-    python -m unittest tests/test_reader.py
-"""
-
 import unittest
 from gmail.reader import _format_email_line, get_help_text
 
 
 class TestGmailReader(unittest.TestCase):
-    """Verifies that email data turns into friendly spoken audio sentences."""
-
     def test_format_unread_email_line(self):
-        """Verifies unread emails are flagged clearly in speech."""
         email = {
             "from": "GitHub <notifications@github.com>",
             "subject": "PR merged into main",
@@ -30,7 +17,6 @@ class TestGmailReader(unittest.TestCase):
         self.assertIn("Unread", line)
 
     def test_format_read_email_line(self):
-        """Verifies read emails do not say 'Unread' unnecessarily."""
         email = {
             "from": "Alex Morgan",
             "subject": "Lunch today?",
@@ -42,7 +28,6 @@ class TestGmailReader(unittest.TestCase):
         self.assertNotIn("Unread", line)
 
     def test_help_text_content(self):
-        """Verifies the spoken help message covers all core voice features."""
         help_text = get_help_text()
         self.assertIn("read my inbox", help_text)
         self.assertIn("compose email", help_text)
@@ -54,4 +39,3 @@ class TestGmailReader(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
