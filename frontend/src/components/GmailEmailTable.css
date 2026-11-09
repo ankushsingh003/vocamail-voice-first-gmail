@@ -1,0 +1,287 @@
+/* ===========================================================================
+   frontend/src/components/GmailEmailTable.css — Authentic Gmail Inbox Table
+   ===========================================================================
+   Matches the email list table from the user's screenshot:
+     - Top action toolbar (Select all, Refresh, More, Pagination).
+     - Category tabs (Primary, Promotions with green badge, Social, Updates).
+     - Clean email rows with Checkbox, Gold Star, Sender, Subject, Snippet, Date.
+     - Hover actions (Archive, Delete, Mark as read).
+   =========================================================================== */
+
+.gmail-main-content {
+  flex: 1;
+  background-color: var(--gm-surface);
+  border-radius: var(--r-md);
+  margin: 0 var(--sp-md) var(--sp-md) 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+}
+
+/* ---------------------------------------------------------------------------
+   Top Action Toolbar
+   --------------------------------------------------------------------------- */
+.table-toolbar {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--sp-md);
+  border-bottom: 1px solid var(--gm-border-light);
+  user-select: none;
+}
+
+.toolbar-left, .toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xs);
+}
+
+.table-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--gm-primary-blue);
+  margin: 0 4px;
+}
+
+.pagination-text {
+  font-size: 0.8rem;
+  color: var(--gm-text-sub);
+  margin: 0 var(--sp-xs);
+}
+
+/* ---------------------------------------------------------------------------
+   Category Tabs (Primary, Promotions, Social, Updates)
+   --------------------------------------------------------------------------- */
+.category-tabs {
+  display: flex;
+  height: 48px;
+  border-bottom: 1px solid var(--gm-border-light);
+  user-select: none;
+}
+
+.tab-btn {
+  flex: 1;
+  max-width: 250px;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  padding: 0 var(--sp-md);
+  border: none;
+  background: transparent;
+  color: var(--gm-text-sub);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  transition: background-color var(--transition);
+}
+
+.tab-btn:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.tab-btn.active {
+  color: var(--gm-primary-blue);
+  font-weight: 600;
+}
+
+.tab-btn.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: var(--gm-primary-blue);
+  border-radius: 3px 3px 0 0;
+}
+
+.tab-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
+  letter-spacing: 0.02em;
+}
+
+.tab-badge.green {
+  background-color: #137333;
+  color: #ffffff;
+}
+
+.tab-badge.orange {
+  background-color: #b06000;
+  color: #ffffff;
+}
+
+/* ---------------------------------------------------------------------------
+   Email Rows List
+   --------------------------------------------------------------------------- */
+.email-table-scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.email-row {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 var(--sp-md);
+  border-bottom: 1px solid var(--gm-border-light);
+  cursor: pointer;
+  background-color: var(--gm-row-read);
+  font-size: 0.88rem;
+  transition: background-color var(--transition), box-shadow var(--transition);
+  position: relative;
+}
+
+.email-row:hover {
+  background-color: var(--gm-row-hover);
+  box-shadow: inset 1px 0 0 #dadce0, inset -1px 0 0 #dadce0, 0 1px 2px 0 rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15);
+  z-index: 1;
+}
+
+.email-row.unread {
+  background-color: var(--gm-row-unread);
+  font-weight: 700;
+}
+
+.row-leading {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xs);
+  width: 64px;
+  flex-shrink: 0;
+}
+
+.star-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--gm-star-empty);
+  transition: transform var(--transition);
+}
+
+.star-btn:hover {
+  transform: scale(1.15);
+}
+
+.star-btn.starred {
+  color: var(--gm-star-gold);
+}
+
+/* Sender Column */
+.row-sender {
+  width: 180px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--gm-text-main);
+  padding-right: var(--sp-sm);
+}
+
+.email-row.unread .row-sender {
+  font-weight: 700;
+}
+
+/* Subject + Snippet Column */
+.row-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  padding-right: var(--sp-md);
+}
+
+.row-subject {
+  color: var(--gm-text-main);
+  font-weight: inherit;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.row-separator {
+  color: var(--gm-text-muted);
+  margin-right: 4px;
+}
+
+.row-snippet {
+  color: var(--gm-text-muted);
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Date & Hover Action Bar */
+.row-trailing {
+  width: 90px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-size: 0.78rem;
+  color: var(--gm-text-sub);
+}
+
+.row-date {
+  font-weight: inherit;
+}
+
+.row-hover-actions {
+  display: none;
+  align-items: center;
+  gap: 2px;
+}
+
+.email-row:hover .row-date {
+  display: none;
+}
+
+.email-row:hover .row-hover-actions {
+  display: flex;
+}
+
+.hover-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-full);
+  border: none;
+  background: transparent;
+  color: var(--gm-text-sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color var(--transition);
+}
+
+.hover-icon-btn:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+  color: var(--gm-text-main);
+}
+
+/* Empty State & Loading State */
+.empty-table-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-xl);
+  color: var(--gm-text-muted);
+  gap: var(--sp-sm);
+  font-size: 0.95rem;
+}
