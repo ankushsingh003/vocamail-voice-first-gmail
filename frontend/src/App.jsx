@@ -461,7 +461,8 @@ export default function App() {
       {/* 3. Floating Compose Window — voice dictation embedded inside for accessibility */}
       <GmailComposeModal
         isOpen={isComposeOpen}
-        initialDraft={composeDraft}
+        draft={composeDraft}
+        onDraftChange={(updated) => setComposeDraft(updated)}
         isSending={isSending}
         onClose={() => setIsComposeOpen(false)}
         onSend={handleSendEmail}
