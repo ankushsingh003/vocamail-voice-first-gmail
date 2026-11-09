@@ -1,36 +1,26 @@
 /**
- * frontend/src/App.jsx — Authentic Real-World Gmail Web App with Voice Integration
- * ================================================================================
- * Matches the layout and functionality of the real Gmail web application
- * (as provided in the user's screenshot), augmented with a senior-developer-grade
- * voice function naturally integrated across every component:
+ * frontend/src/App.jsx — Authentic Gmail Web Application with Natural Voice Integration
+ * ======================================================================================
+ * Voice is integrated naturally where it belongs — not as a floating widget:
  *
  * 1. Top Navbar (<GmailNavbar />):
- *    - Hamburger toggle, Google/Gmail logo.
- *    - Global Search bar with filters and embedded Voice Search microphone.
- *    - Account avatar with real-time profile info and sign out.
+ *    - Hamburger toggle, Google/Gmail logo, search bar.
+ *    - 🎙️ Voice mic button INSIDE the search bar → Whisper-powered voice search.
+ *      Click the mic → speak → Whisper transcribes → inbox filters automatically.
  *
  * 2. Left Sidebar (<GmailSidebar />):
- *    - Authentic "+ Compose" pill button (opens floating compose window).
- *    - Folders: Inbox (with unread badge), Starred, Snoozed, Sent, Drafts, Trash.
- *    - Collapsible state & Labels list.
+ *    - Authentic "+ Compose" pill button → opens the floating compose window.
  *
  * 3. Main Central Content Pane:
- *    - If an email is selected: displays <GmailDetailView /> with full message body,
- *      reply/forward tools, and an explicit "🔊 Listen to Email" voice narration banner.
- *    - If no email selected: displays <GmailEmailTable /> with Primary / Promotions /
- *      Social / Updates category tabs, toolbar, and hover action buttons.
+ *    - Email Table with category tabs (Primary, Promotions, Social, Updates).
+ *    - Email Detail View with "🔊 Listen to Email" narration banner.
  *
  * 4. Floating Compose Window (<GmailComposeModal />):
- *    - Authentic bottom-right docked modal with To, Subject, Body, and
- *      dedicated Voice Dictation button ("🎙️ Voice Compose").
+ *    - To, Subject, Body fields.
+ *    - 🎙️ "Dictate" button inside the compose window → voice-to-text for
+ *      those who cannot type. Whisper transcribes speech directly into the body.
  *
- * 5. Floating Senior Developer Voice HUD (<VoiceAssistantHUD />):
- *    - Interactive bottom-right floating pill with real-time soundwave visualizer.
- *    - Dynamic states: IDLE, RECORDING, PROCESSING, SPEAKING.
- *    - ARIA live region subtitles for screen readers.
- *    - Expandable voice command cheat sheet.
- *    - Push-to-talk with global Spacebar shortcut and audio playback.
+ * No separate voice widget is shown. Voice is embedded naturally into the UI.
  */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
@@ -39,10 +29,9 @@ import GmailSidebar from "./components/GmailSidebar";
 import GmailEmailTable from "./components/GmailEmailTable";
 import GmailDetailView from "./components/GmailDetailView";
 import GmailComposeModal from "./components/GmailComposeModal";
-import VoiceAssistantHUD from "./components/VoiceAssistantHUD";
 import LoginCard from "./components/LoginCard";
 
-// Microphone capture utility
+// Microphone capture utility (used by both search mic and compose dictation)
 import { startRecording, stopRecording } from "./utils/audioRecorder";
 
 import "./App.css";
@@ -67,24 +56,23 @@ export default function App() {
   const [composeDraft, setComposeDraft] = useState({ to: "", subject: "", body: "" });
   const [isSending, setIsSending] = useState(false);
 
-  // ---- Voice Assistant States ----
-  const [voiceState, setVoiceState] = useState("idle"); // "idle" | "recording" | "processing" | "speaking"
+  // ---- Voice Recording State (shared by search mic & compose dictation) ----
+  // voiceTarget: "search" = mic in search bar, "compose" = dictate in compose window
   const [isRecording, setIsRecording] = useState(false);
-  const [subtitle, setSubtitle] = useState("");
-  const [transcript, setTranscript] = useState("");
-  const [audioUrl, setAudioUrl] = useState(null);
+  const [voiceTarget, setVoiceTarget] = useState(null);
   const [vocamailState, setVocamailState] = useState({
     mode: "idle",
     compose_step: null,
     draft: { to: null, subject: null, body: null },
   });
 
-  // Track recording state in ref for keyboard events
+  // Hidden audio element for gTTS voice reply playback
+  const audioRef = useRef(null);
   const isRecordingRef = useRef(false);
   isRecordingRef.current = isRecording;
 
   // --------------------------------------------------------------------------
-  // 1. Initial Session Check on App Load
+  // 1. Session Check on App Load
   // --------------------------------------------------------------------------
   useEffect(() => {
     async function checkAuth() {
@@ -100,9 +88,7 @@ export default function App() {
                 email: data.user.email || "",
               });
             }
-            if (data.state) {
-              setVocamailState(data.state);
-            }
+            if (data.state) setVocamailState(data.state);
           } else {
             setIsLoggedIn(false);
           }
@@ -110,7 +96,7 @@ export default function App() {
           setIsLoggedIn(false);
         }
       } catch (err) {
-        console.warn("[VocaMail] Session check warning:", err.message);
+        console.warn("[VocaMail] Session check:", err.message);
         setIsLoggedIn(false);
       } finally {
         setIsCheckingAuth(false);
@@ -120,7 +106,7 @@ export default function App() {
   }, []);
 
   // --------------------------------------------------------------------------
-  // 2. Fetch Emails for Active Folder or Search Query
+  // 2. Fetch Emails
   // --------------------------------------------------------------------------
   const loadEmails = useCallback(async (folder = activeFolder, query = "") => {
     setIsLoadingEmails(true);
@@ -137,31 +123,23 @@ export default function App() {
         setIsLoggedIn(false);
       }
     } catch (err) {
-      console.error("[VocaMail] Error fetching emails:", err);
+      console.error("[VocaMail] Fetch emails error:", err);
     } finally {
       setIsLoadingEmails(false);
     }
   }, [activeFolder]);
 
-  // Load emails when user logs in or switches folders
   useEffect(() => {
-    if (isLoggedIn) {
-      loadEmails(activeFolder, searchQuery);
-    }
+    if (isLoggedIn) loadEmails(activeFolder, searchQuery);
   }, [isLoggedIn, activeFolder, loadEmails]);
 
   // --------------------------------------------------------------------------
-  // 3. Email Actions (Open, Archive, Trash, Star, Mark Read)
+  // 3. Email Actions
   // --------------------------------------------------------------------------
   async function handleOpenEmail(emailSummary) {
     try {
       const res = await fetch(`/api/email/${encodeURIComponent(emailSummary.id)}`);
-      if (res.ok) {
-        const fullEmail = await res.json();
-        setSelectedEmail(fullEmail);
-      } else {
-        setSelectedEmail(emailSummary);
-      }
+      setSelectedEmail(res.ok ? await res.json() : emailSummary);
     } catch {
       setSelectedEmail(emailSummary);
     }
@@ -174,12 +152,8 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
-      // Remove or update locally
       setEmails((prev) => prev.filter((m) => m.id !== id));
-      if (selectedEmail && selectedEmail.id === id) {
-        setSelectedEmail(null);
-      }
-      setSubtitle("Email archived.");
+      if (selectedEmail?.id === id) setSelectedEmail(null);
     } catch (err) {
       console.error("[VocaMail] Archive error:", err);
     }
@@ -193,10 +167,7 @@ export default function App() {
         body: JSON.stringify({ id }),
       });
       setEmails((prev) => prev.filter((m) => m.id !== id));
-      if (selectedEmail && selectedEmail.id === id) {
-        setSelectedEmail(null);
-      }
-      setSubtitle("Email moved to Trash.");
+      if (selectedEmail?.id === id) setSelectedEmail(null);
     } catch (err) {
       console.error("[VocaMail] Trash error:", err);
     }
@@ -209,9 +180,7 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
-      setEmails((prev) =>
-        prev.map((m) => (m.id === id ? { ...m, is_unread: false } : m))
-      );
+      setEmails((prev) => prev.map((m) => (m.id === id ? { ...m, is_unread: false } : m)));
     } catch (err) {
       console.error("[VocaMail] Mark read error:", err);
     }
@@ -225,14 +194,12 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, star: nextStar }),
       });
-      setEmails((prev) =>
-        prev.map((m) => (m.id === id ? { ...m, is_starred: nextStar } : m))
-      );
-      if (selectedEmail && selectedEmail.id === id) {
+      setEmails((prev) => prev.map((m) => (m.id === id ? { ...m, is_starred: nextStar } : m)));
+      if (selectedEmail?.id === id) {
         setSelectedEmail((prev) => ({ ...prev, is_starred: nextStar }));
       }
     } catch (err) {
-      console.error("[VocaMail] Toggle star error:", err);
+      console.error("[VocaMail] Star error:", err);
     }
   }
 
@@ -271,11 +238,10 @@ export default function App() {
       if (res.ok) {
         setIsComposeOpen(false);
         setComposeDraft({ to: "", subject: "", body: "" });
-        setSubtitle("Email sent successfully!");
         loadEmails();
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || "Failed to send email. Please check recipient address.");
+        alert(data.error || "Failed to send email. Please check the recipient address.");
       }
     } catch (err) {
       console.error("[VocaMail] Send error:", err);
@@ -286,34 +252,21 @@ export default function App() {
   }
 
   // --------------------------------------------------------------------------
-  // 5. Voice Reading Narration for Current Email
+  // 5. Email Voice Narration ("Listen to Email" in detail view)
   // --------------------------------------------------------------------------
   function handleVoiceReadEmail(email) {
     if (isNarratingEmail) {
-      // Stop reading
       window.speechSynthesis?.cancel();
       setIsNarratingEmail(false);
-      setVoiceState("idle");
       return;
     }
-
     const textToRead = `${email.subject || "No subject"}. From ${email.sender || "unknown"}. ${email.body || email.snippet || "Empty message"}`;
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(textToRead);
-      utterance.onstart = () => {
-        setIsNarratingEmail(true);
-        setVoiceState("speaking");
-        setSubtitle(`Reading: ${email.subject}`);
-      };
-      utterance.onend = () => {
-        setIsNarratingEmail(false);
-        setVoiceState("idle");
-      };
-      utterance.onerror = () => {
-        setIsNarratingEmail(false);
-        setVoiceState("idle");
-      };
+      utterance.onstart = () => setIsNarratingEmail(true);
+      utterance.onend = () => setIsNarratingEmail(false);
+      utterance.onerror = () => setIsNarratingEmail(false);
       window.speechSynthesis.speak(utterance);
     } else {
       alert("Text-to-speech is not supported on this browser.");
@@ -321,27 +274,27 @@ export default function App() {
   }
 
   // --------------------------------------------------------------------------
-  // 6. Senior-Developer Push-to-Talk Voice Pipeline
+  // 6. Whisper Voice Pipeline
+  //    Used by both the Search bar mic and the Compose dictation button.
+  //    target: "search" or "compose"
   // --------------------------------------------------------------------------
-  async function handleStartListening() {
+  async function handleStartVoice(target) {
     if (isRecordingRef.current) return;
     try {
       await startRecording();
       setIsRecording(true);
-      setVoiceState("recording");
-      setSubtitle("Listening... Speak your command now.");
+      setVoiceTarget(target);
     } catch (err) {
-      console.error("[VocaMail Voice] Mic start error:", err);
-      setSubtitle(`Microphone error: ${err.message}`);
-      setVoiceState("idle");
+      console.error("[VocaMail Voice] Mic error:", err);
+      alert(`Microphone error: ${err.message}`);
     }
   }
 
-  async function handleStopListening() {
+  async function handleStopVoice() {
     if (!isRecordingRef.current) return;
+    const target = voiceTarget;
     setIsRecording(false);
-    setVoiceState("processing");
-    setSubtitle("Whisper is transcribing your command...");
+    setVoiceTarget(null);
 
     try {
       const audioBlob = await stopRecording();
@@ -356,18 +309,33 @@ export default function App() {
       if (!res.ok) {
         if (res.status === 401) {
           setIsLoggedIn(false);
-          throw new Error("Session expired. Please sign in again.");
+          return;
         }
         const errJson = await res.json().catch(() => ({}));
         throw new Error(errJson.error || `Server error ${res.status}`);
       }
 
       const data = await res.json();
-      setTranscript(data.transcript || "");
-      const responseText = data.text || data.transcript || "Command processed.";
-      setSubtitle(responseText);
+      const spokenText = data.text || data.transcript || "";
 
-      // Multi-turn draft update: if user is composing via voice, open modal
+      if (target === "search") {
+        // Voice search: populate search bar and filter emails
+        const query = data.search_query || data.transcript || spokenText;
+        if (query) {
+          setSearchQuery(query);
+          loadEmails(activeFolder, query);
+        }
+      } else if (target === "compose") {
+        // Voice dictation: append transcribed text into the compose body
+        if (data.transcript) {
+          setComposeDraft((prev) => ({
+            ...prev,
+            body: prev.body ? `${prev.body} ${data.transcript}` : data.transcript,
+          }));
+        }
+      }
+
+      // Handle multi-turn compose flow from backend intent
       if (data.state) {
         setVocamailState(data.state);
         if (data.state.mode === "composing") {
@@ -380,67 +348,33 @@ export default function App() {
         }
       }
 
-      // Voice search trigger: if intent had a search query
-      if (data.search_query) {
-        setSearchQuery(data.search_query);
-        loadEmails(activeFolder, data.search_query);
-      } else {
-        // Refresh inbox in case read/archive/trash was invoked
-        loadEmails();
-      }
-
-      // Play gTTS spoken reply
-      if (data.audio_url) {
-        setAudioUrl(data.audio_url);
-        setVoiceState("speaking");
-      } else {
-        setVoiceState("idle");
+      // Play gTTS spoken audio reply if server returns one
+      if (data.audio_url && audioRef.current) {
+        audioRef.current.src = data.audio_url;
+        audioRef.current.play().catch(() => {});
       }
     } catch (err) {
       console.error("[VocaMail Voice] Pipeline error:", err);
-      setSubtitle(`Error: ${err.message}`);
-      setVoiceState("idle");
+      alert(`Voice error: ${err.message}`);
     }
   }
 
-  // Push-to-Talk via Spacebar (holding space records, releasing finishes)
-  useEffect(() => {
-    function handleKeyDown(e) {
-      // Don't trigger voice push-to-talk if typing inside an input or textarea
-      const tag = e.target.tagName.toLowerCase();
-      if (tag === "input" || tag === "textarea" || e.target.isContentEditable) {
-        return;
-      }
-      if (e.code === "Space" && !e.repeat && !isRecordingRef.current) {
-        e.preventDefault();
-        handleStartListening();
-      }
-    }
+  // Toggle helpers used by navbar mic and compose dictate button
+  function handleToggleSearchVoice() {
+    if (isRecording && voiceTarget === "search") handleStopVoice();
+    else handleStartVoice("search");
+  }
 
-    function handleKeyUp(e) {
-      const tag = e.target.tagName.toLowerCase();
-      if (tag === "input" || tag === "textarea" || e.target.isContentEditable) {
-        return;
-      }
-      if (e.code === "Space" && isRecordingRef.current) {
-        e.preventDefault();
-        handleStopListening();
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, []);
+  function handleToggleComposeVoice() {
+    if (isRecording && voiceTarget === "compose") handleStopVoice();
+    else handleStartVoice("compose");
+  }
 
   // --------------------------------------------------------------------------
-  // 7. Render Views
+  // 7. Render
   // --------------------------------------------------------------------------
 
-  // Loading view
+  // Loading screen
   if (isCheckingAuth) {
     return (
       <div className="gmail-loading-screen" role="status" aria-live="polite">
@@ -450,7 +384,7 @@ export default function App() {
     );
   }
 
-  // Logged-out view
+  // Logged-out: show sign-in card
   if (!isLoggedIn) {
     return (
       <main className="gmail-login-screen">
@@ -459,19 +393,19 @@ export default function App() {
     );
   }
 
-  // Authentic Gmail Web Interface
+  // Authenticated: full authentic Gmail web UI
   return (
     <div className="gmail-app-root">
-      {/* 1. Authentic Top Gmail Navbar */}
+      {/* Hidden audio element for gTTS voice reply playback */}
+      <audio ref={audioRef} aria-hidden="true" style={{ display: "none" }} />
+
+      {/* 1. Top Gmail Navbar — voice mic naturally embedded inside search bar */}
       <GmailNavbar
         searchQuery={searchQuery}
         onSearchChange={(q) => setSearchQuery(q)}
         onSearchSubmit={(q) => loadEmails(activeFolder, q)}
-        onToggleVoice={() => {
-          if (voiceState === "recording") handleStopListening();
-          else handleStartListening();
-        }}
-        isRecording={voiceState === "recording"}
+        onToggleVoice={handleToggleSearchVoice}
+        isRecording={isRecording && voiceTarget === "search"}
         onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
         onLogout={() => {
           fetch("/logout").then(() => setIsLoggedIn(false));
@@ -479,9 +413,9 @@ export default function App() {
         userName={userProfile.name}
       />
 
-      {/* 2. Main 2-Column Body Layout */}
+      {/* 2. Main 2-Column Body: Sidebar + Content */}
       <div className="gmail-body-layout">
-        {/* Left Sidebar */}
+        {/* Left Sidebar: Compose pill + folder list */}
         <GmailSidebar
           currentFolder={activeFolder}
           onSelectFolder={(folder) => {
@@ -494,7 +428,7 @@ export default function App() {
           isCollapsed={isSidebarCollapsed}
         />
 
-        {/* Central Content Area: Email Table or Detail View */}
+        {/* Central Content: Email Table or Email Detail */}
         <main className="gmail-main-content-region" id="main-content">
           {selectedEmail ? (
             <GmailDetailView
@@ -524,29 +458,15 @@ export default function App() {
         </main>
       </div>
 
-      {/* 3. Authentic Floating Compose Window */}
+      {/* 3. Floating Compose Window — voice dictation embedded inside for accessibility */}
       <GmailComposeModal
         isOpen={isComposeOpen}
         initialDraft={composeDraft}
         isSending={isSending}
         onClose={() => setIsComposeOpen(false)}
         onSend={handleSendEmail}
-        onVoiceDictate={() => {
-          if (voiceState === "recording") handleStopListening();
-          else handleStartListening();
-        }}
-        isVoiceActive={voiceState === "recording"}
-      />
-
-      {/* 4. Senior Developer Floating Voice HUD */}
-      <VoiceAssistantHUD
-        voiceState={voiceState}
-        subtitle={subtitle}
-        transcript={transcript}
-        audioUrl={audioUrl}
-        onStartListening={handleStartListening}
-        onStopListening={handleStopListening}
-        onAudioEnded={() => setVoiceState("idle")}
+        onVoiceDictate={handleToggleComposeVoice}
+        isVoiceActive={isRecording && voiceTarget === "compose"}
       />
     </div>
   );
