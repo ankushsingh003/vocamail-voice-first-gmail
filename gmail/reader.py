@@ -173,6 +173,7 @@ def get_help_text() -> str:
     """Returns a friendly spoken description of all supported voice commands."""
     return (
         "Here is what you can ask me. "
+        "Say 'give me my briefing' to hear your morning executive podcast. "
         "Say 'read my inbox' to hear your recent emails. "
         "Say 'read email 1' to hear a full email. "
         "Say 'search for' followed by a keyword to find specific emails. "
