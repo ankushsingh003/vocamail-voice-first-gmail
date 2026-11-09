@@ -38,7 +38,8 @@ from core.state import get_state, set_state, reset_state
 from core.intent import detect_intent
 from gmail.client import (
     list_inbox, print_inbox_summary, send_email,
-    search_messages, archive_message, trash_message, mark_as_read
+    search_messages, archive_message, trash_message, mark_as_read,
+    toggle_star, get_message
 )
 from gmail.reader import (
     narrate_inbox, narrate_email, get_help_text, narrate_search_results
@@ -190,15 +191,143 @@ def api_session():
 # Used by the "Fetch Latest Emails" button in the Phase 1 UI.
 # It calls our Gmail postman (gmail/client.py), grabs the 5 newest emails,
 # and sends them as clean JSON data so the browser can display them on screen.
+# ---------------------------------------------------------------------------
+# 8. Webmail REST Endpoints (Fetch Inbox, Email Detail, Actions)
+# ---------------------------------------------------------------------------
+# These endpoints power the full real Gmail web client interface:
+
 @app.route("/api/inbox")
 @login_required
 def api_inbox():
-    """Fetches your recent inbox emails and sends them back as JSON."""
+    """Fetches emails for the requested folder/label (e.g. INBOX, STARRED, SENT, TRASH)."""
     try:
         creds = get_credentials()
-        messages = list_inbox(creds)
-        return jsonify({"ok": True, "messages": messages})
+        limit = request.args.get("limit", 50, type=int)
+        label = request.args.get("label", "INBOX").upper()
+        messages = list_inbox(creds, max_results=limit, label_ids=[label])
+        return jsonify({"ok": True, "messages": messages, "label": label})
     except Exception as e:
+        logger.error(f"[VocaMail] api_inbox error: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/email/<msg_id>")
+@login_required
+def api_email_detail(msg_id):
+    """Fetches full content, headers, and decoded body of a specific email."""
+    try:
+        creds = get_credentials()
+        detail = get_message(creds, msg_id)
+        return jsonify({"ok": True, "email": detail})
+    except Exception as e:
+        logger.error(f"[VocaMail] api_email_detail error: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/send", methods=["POST"])
+@login_required
+def api_send_email():
+    """Sends an email directly from the visual Compose modal."""
+    try:
+        data = request.get_json(silent=True) or {}
+        to = data.get("to", "").strip()
+        subject = data.get("subject", "").strip()
+        body = data.get("body", "").strip()
+
+        if not to:
+            return jsonify({"ok": False, "error": "Recipient email address is required."}), 400
+
+        creds = get_credentials()
+        res = send_email(creds, to=to, subject=subject, body=body)
+        return jsonify({"ok": True, "sent": res})
+    except Exception as e:
+        logger.error(f"[VocaMail] api_send error: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/archive", methods=["POST"])
+@login_required
+def api_archive_email():
+    """Archives an email by removing it from the INBOX label."""
+    try:
+        data = request.get_json(silent=True) or {}
+        msg_id = data.get("id")
+        if not msg_id:
+            return jsonify({"ok": False, "error": "Missing email id."}), 400
+        creds = get_credentials()
+        archive_message(creds, msg_id)
+        return jsonify({"ok": True})
+    except Exception as e:
+        logger.error(f"[VocaMail] api_archive error: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/trash", methods=["POST"])
+@login_required
+def api_trash_email():
+    """Moves an email into Gmail's Trash folder."""
+    try:
+        data = request.get_json(silent=True) or {}
+        msg_id = data.get("id")
+        if not msg_id:
+            return jsonify({"ok": False, "error": "Missing email id."}), 400
+        creds = get_credentials()
+        trash_message(creds, msg_id)
+        return jsonify({"ok": True})
+    except Exception as e:
+        logger.error(f"[VocaMail] api_trash error: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/mark_read", methods=["POST"])
+@login_required
+def api_mark_read():
+    """Marks an email as read."""
+    try:
+        data = request.get_json(silent=True) or {}
+        msg_id = data.get("id")
+        if not msg_id:
+            return jsonify({"ok": False, "error": "Missing email id."}), 400
+        creds = get_credentials()
+        mark_as_read(creds, msg_id)
+        return jsonify({"ok": True})
+    except Exception as e:
+        logger.error(f"[VocaMail] api_mark_read error: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/star", methods=["POST"])
+@login_required
+def api_star_email():
+    """Stars or unstars an email in Gmail."""
+    try:
+        data = request.get_json(silent=True) or {}
+        msg_id = data.get("id")
+        star = bool(data.get("star", True))
+        if not msg_id:
+            return jsonify({"ok": False, "error": "Missing email id."}), 400
+        creds = get_credentials()
+        toggle_star(creds, msg_id, star=star)
+        return jsonify({"ok": True, "starred": star})
+    except Exception as e:
+        logger.error(f"[VocaMail] api_star error: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/search")
+@login_required
+def api_search():
+    """Searches emails by keyword, sender, or subject."""
+    try:
+        query = request.args.get("q", "").strip()
+        limit = request.args.get("limit", 25, type=int)
+        if not query:
+            return jsonify({"ok": True, "messages": []})
+        creds = get_credentials()
+        results = search_messages(creds, query=query, max_results=limit)
+        return jsonify({"ok": True, "messages": results, "query": query})
+    except Exception as e:
+        logger.error(f"[VocaMail] api_search error: {e}")
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
