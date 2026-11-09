@@ -210,15 +210,16 @@ export default function GmailNavbar({
           </svg>
         </button>
 
-        <div className="brand-link" tabIndex={0} role="link" aria-label="VocaMail Home">
-          {/* Authentic Google Gmail Envelope Logo */}
-          <svg className="brand-logo-svg" viewBox="0 0 24 24">
-            <path fill="#4285f4" d="M1.5 5.25v13.5c0 .966.784 1.75 1.75 1.75H6V10.2L1.5 6.75z" />
-            <path fill="#34a853" d="M18 20.5h2.75c.966 0 1.75-.784 1.75-1.75V5.25l-4.5 3.45z" />
-            <path fill="#ea4335" d="M18 5.25l-6 4.5-6-4.5h12z" />
-            <path fill="#fbbc05" d="M6 5.25l6 4.5 6-4.5V3.5c0-.966-.784-1.75-1.75-1.75h-8.5C6.784 1.75 6 2.534 6 3.5z" />
-          </svg>
-          <span className="brand-title">VocaMail</span>
+        <div className="brand-link" tabIndex={0} role="link" aria-label="vocamail Home">
+          {/* Authentic Official Google Gmail Logo */}
+          <img
+            src="https://ssl.gstatic.com/images/branding/product/2x/gmail_2020q4_48dp.png"
+            alt="Gmail"
+            className="brand-logo-img"
+            width="32"
+            height="32"
+          />
+          <span className="brand-title">vocamail</span>
           <span className="voice-badge-tag">Voice AI</span>
         </div>
       </div>
