@@ -1,35 +1,8 @@
-/**
- * frontend/src/components/VoiceAssistantHUD.jsx — Floating Senior Developer Voice HUD
- * ===================================================================================
- * A floating, non-intrusive Head-Up Display (HUD) docked at the bottom-right of the screen.
- * This is the signature "senior developer" voice integration that bridges voice AI
- * with the authentic Gmail web application:
- *
- * Features:
- * 1. Interactive Pill:
- *    - Click to toggle listening, or hold Spacebar from anywhere in the app.
- *    - Shows real-time dynamic states: IDLE, RECORDING, PROCESSING, SPEAKING.
- *
- * 2. Real-time Visualizer:
- *    - Animated soundwave equalizer when listening or speaking.
- *    - Color shifts: Slate for Idle, Crimson for Recording, Indigo for Processing, Forest Green for Speaking.
- *
- * 3. ARIA Live Subtitles:
- *    - Dedicated ARIA live region ensuring complete screen-reader accessibility.
- *    - On-screen subtitle displaying what the assistant is speaking out loud.
- *
- * 4. Voice Cheat Sheet Card:
- *    - Expandable card listing common voice commands ("read emails", "search for...", "compose email to...", "archive").
- *
- * 5. Audio Player:
- *    - Controls audio playback of gTTS server responses with auto-play and callbacks.
- */
-
 import React, { useState, useEffect, useRef } from "react";
 import "./VoiceAssistantHUD.css";
 
 export default function VoiceAssistantHUD({
-  voiceState = "idle", // "idle" | "recording" | "processing" | "speaking"
+  voiceState = "idle",
   subtitle = "",
   transcript = "",
   audioUrl = null,
@@ -40,18 +13,15 @@ export default function VoiceAssistantHUD({
   const [isCardOpen, setIsCardOpen] = useState(false);
   const audioRef = useRef(null);
 
-  // Play audio whenever a new audioUrl arrives
   useEffect(() => {
     if (audioUrl && audioRef.current) {
       audioRef.current.src = audioUrl;
       audioRef.current.play().catch((err) => {
-        // Browser autoplay restriction safeguard
         console.warn("[VocaMail Voice HUD] Audio autoplay blocked or failed:", err);
       });
     }
   }, [audioUrl]);
 
-  // Handle pill click: toggle recording
   function handlePillClick() {
     if (voiceState === "recording") {
       onStopListening && onStopListening();
@@ -60,7 +30,6 @@ export default function VoiceAssistantHUD({
     }
   }
 
-  // Derive human-friendly status label
   function getStatusLabel() {
     switch (voiceState) {
       case "recording":
@@ -75,7 +44,6 @@ export default function VoiceAssistantHUD({
     }
   }
 
-  // Derive subtext description
   function getSubtext() {
     if (subtitle) return subtitle;
     switch (voiceState) {
@@ -93,7 +61,7 @@ export default function VoiceAssistantHUD({
 
   return (
     <aside className="voice-hud-container" aria-label="VocaMail Voice Assistant">
-      {/* Hidden ARIA Live region for screen readers */}
+      {}
       <div
         role="status"
         aria-live="polite"
@@ -112,14 +80,14 @@ export default function VoiceAssistantHUD({
         {subtitle || getStatusLabel()}
       </div>
 
-      {/* Hidden audio element for voice output */}
+      {}
       <audio
         ref={audioRef}
         onEnded={() => onAudioEnded && onAudioEnded()}
         preload="auto"
       />
 
-      {/* Collapsible Transcript & Voice Commands Card */}
+      {}
       {isCardOpen && (
         <section className="voice-hud-card" aria-label="Voice command helper">
           <div className="voice-hud-card-header">
@@ -141,14 +109,14 @@ export default function VoiceAssistantHUD({
             </button>
           </div>
 
-          {/* User Transcript */}
+          {}
           {transcript && (
             <div className="voice-hud-transcript">
               <strong>You said:</strong> "{transcript}"
             </div>
           )}
 
-          {/* Voice Command Suggestions */}
+          {}
           <div className="voice-hud-tips">
             <div className="voice-tip-item">
               <span className="voice-tip-code">"Read my unread emails"</span>
@@ -174,14 +142,14 @@ export default function VoiceAssistantHUD({
         </section>
       )}
 
-      {/* Main Interactive HUD Pill */}
+      {}
       <button
         type="button"
         className={`voice-hud-pill ${voiceState}`}
         onClick={handlePillClick}
         aria-label={`${getStatusLabel()} - Click to activate voice assistant`}
       >
-        {/* Animated equalizer or mic icon */}
+        {}
         <div className="voice-hud-mic-circle">
           {voiceState === "recording" || voiceState === "speaking" ? (
             <div className="voice-equalizer" aria-hidden="true">
@@ -199,7 +167,7 @@ export default function VoiceAssistantHUD({
           )}
         </div>
 
-        {/* Status text & Subtitle */}
+        {}
         <div className="voice-hud-text-area">
           <span className="voice-hud-status">{getStatusLabel()}</span>
           <span className="voice-hud-sub" title={getSubtext()}>
@@ -207,12 +175,12 @@ export default function VoiceAssistantHUD({
           </span>
         </div>
 
-        {/* Spacebar shortcut badge */}
+        {}
         <span className="voice-hud-badge" title="Press & hold Spacebar to talk">
           Space
         </span>
 
-        {/* Expand info card toggle button */}
+        {}
         <div
           role="button"
           tabIndex={0}
