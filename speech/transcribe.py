@@ -3,174 +3,168 @@ speech/transcribe.py — The Ear of VocaMail (Whisper Speech-to-Text)
 ===================================================================
 Think of this file like the assistant's ears.
 
-When you speak into your microphone, the browser captures the soundwaves,
-packs them into a small audio file (e.g. .webm or .wav), and sends it to Flask.
-This file receives that audio, listens to it using OpenAI's Whisper AI model,
-and writes down the exact words you said into plain English text.
+When you speak into your microphone, the browser captures your voice,
+packs it into a small audio file (.webm or .wav), and sends it to Flask.
+This module receives that audio and sends it to OpenAI's Whisper API —
+the same service powering ChatGPT's voice mode — to convert speech to text.
 
-Key Features:
-  1. Smart In-Memory Caching:
-     Neural network models are heavy. If we loaded Whisper from scratch on
-     every button press, you'd wait 10 seconds every time you spoke.
-     Instead, we load the model once into memory (`_cached_model`) and reuse
-     it instantly for all future voice turns!
-  2. Dual Modes (Local or Cloud API):
-     - Local: Runs 100% on your laptop's CPU for free, completely offline.
-     - API: Uses OpenAI's cloud endpoint if you provided an OPENAI_API_KEY.
-  3. Absolute Privacy:
-     Voice recordings are temporary. Once the words are transcribed, this file
-     immediately deletes the audio file from disk so your private voice never lingers.
+Why Whisper API (not local)?
+  - Zero setup: no local model files to download (1–3 GB), no GPU needed.
+  - Faster: OpenAI's servers are optimized and handle your 2–5 second clip in <1s.
+  - More accurate: whisper-1 on the cloud beats the local 'base' model every time.
+  - Multilingual: automatically detects and transcribes 50+ languages.
+
+Voice Flow:
+  Browser mic → .webm blob → POST /api/voice → transcribe_audio() → Whisper API
+  → plain English text → back to App.jsx → search bar or compose body
+
+Privacy:
+  Audio files are deleted from disk immediately after transcription.
+  OpenAI's API does not retain audio for training (see their usage policies).
 """
 
 import os
-import shutil
 import logging
 from typing import Optional
 import config
 
 logger = logging.getLogger(__name__)
 
-# Global cache so Whisper stays hot in memory instead of reloading every turn
-_cached_model = None
-
 
 # ---------------------------------------------------------------------------
-# Helper: Ensure FFmpeg is Available on System PATH (_ensure_ffmpeg)
+# 1. Cloud Whisper API Transcriber (Primary — via OpenAI Python SDK)
 # ---------------------------------------------------------------------------
-# OpenAI Whisper relies on the command-line tool 'ffmpeg' to unpack audio files
-# (like .webm, .wav, .mp3). On Windows, ffmpeg is rarely installed by default.
-# This helper dynamically locates the bundled ffmpeg from the 'imageio-ffmpeg'
-# library and exposes it to system PATH so Whisper works out of the box with zero setup!
-def _ensure_ffmpeg():
-    """Finds or registers ffmpeg executable on PATH for Whisper decoding."""
-    if shutil.which("ffmpeg"):
-        return
+def _transcribe_via_api(audio_path: str) -> str:
+    """
+    Sends the audio clip to OpenAI's Whisper API and returns the transcribed text.
+
+    Uses the official openai Python SDK which handles:
+      - Authentication (Bearer token)
+      - Automatic retries on transient network errors
+      - Proper multipart file upload
+      - Detailed error messages
+
+    Model: whisper-1
+      OpenAI's production Whisper model — accurate, fast, handles accents well.
+    """
+    api_key = getattr(config, "OPENAI_API_KEY", "").strip()
+    if not api_key or api_key == "YOUR_OPENAI_API_KEY_HERE":
+        raise ValueError(
+            "OPENAI_API_KEY is not set in your .env file. "
+            "Get your key from https://platform.openai.com/api-keys "
+            "and add it to .env as: OPENAI_API_KEY=sk-..."
+        )
 
     try:
-        import imageio_ffmpeg
-        ffmpeg_bin = imageio_ffmpeg.get_ffmpeg_exe()
-        bin_dir = os.path.dirname(ffmpeg_bin)
+        from openai import OpenAI
+    except ImportError:
+        raise RuntimeError(
+            "The 'openai' package is not installed. Run: pip install openai"
+        )
 
-        # On Windows, imageio-ffmpeg names the file 'ffmpeg-win-x86_64-v7.1.exe'.
-        # Whisper specifically expects a binary named 'ffmpeg' (or 'ffmpeg.exe').
-        target_name = "ffmpeg.exe" if os.name == "nt" else "ffmpeg"
-        target_path = os.path.join(bin_dir, target_name)
-        if not os.path.exists(target_path):
-            try:
-                shutil.copyfile(ffmpeg_bin, target_path)
-            except Exception as copy_err:
-                logger.debug(f"[VocaMail] Could not alias ffmpeg: {copy_err}")
+    client = OpenAI(api_key=api_key)
 
-        # Prepend directory to PATH so subprocess can find it immediately
-        if bin_dir not in os.environ.get("PATH", ""):
-            os.environ["PATH"] = bin_dir + os.pathsep + os.environ.get("PATH", "")
-            logger.info(f"[VocaMail] Registered bundled ffmpeg on PATH: {bin_dir}")
-    except Exception as err:
-        logger.warning(f"[VocaMail] Could not automatically register ffmpeg: {err}")
+    logger.info(f"[VocaMail] Sending audio to Whisper API: {os.path.basename(audio_path)}")
 
+    with open(audio_path, "rb") as audio_file:
+        response = client.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio_file,
+            # Let Whisper auto-detect the language for maximum flexibility.
+            # To force English, uncomment: language="en"
+        )
 
-# Ensure ffmpeg is discovered immediately when module loads
-_ensure_ffmpeg()
+    transcript = response.text.strip() if response.text else ""
+    logger.info(f"[VocaMail] Whisper API transcribed: \"{transcript}\"")
+    return transcript
 
 
 # ---------------------------------------------------------------------------
-# 1. Load Whisper Model into Memory (_get_whisper_model)
+# 2. Local Whisper Fallback (Only if WHISPER_MODE=local in .env)
 # ---------------------------------------------------------------------------
-# Loads the neural network once on first use and keeps it ready in RAM.
-def _get_whisper_model():
-    """Loads and caches the Whisper model on demand to keep speech turns snappy."""
-    global _cached_model
-    _ensure_ffmpeg()
-    if _cached_model is None:
-        try:
-            import whisper
-            model_name = getattr(config, "WHISPER_MODEL", "base")
-            logger.info(f"[VocaMail] Loading Whisper model '{model_name}' into memory…")
-            _cached_model = whisper.load_model(model_name)
-            logger.info("[VocaMail] Whisper model loaded and ready!")
-        except ImportError:
-            raise RuntimeError(
-                "The 'whisper' package is not installed. Run 'pip install openai-whisper'."
-            )
-        except Exception as e:
-            raise RuntimeError(f"Failed to load Whisper model: {e}")
-
-    return _cached_model
-
-
-# ---------------------------------------------------------------------------
-# 2. Cloud Whisper API Transcriber (_transcribe_via_api)
-# ---------------------------------------------------------------------------
-# If you prefer using OpenAI's cloud servers (useful if on a very slow computer),
-# this function sends the audio file to OpenAI's transcriptions API.
-def _transcribe_via_api(audio_path: str) -> str:
-    """Sends the audio clip to OpenAI's Whisper API and returns the text."""
-    import requests
-
-    api_key = getattr(config, "OPENAI_API_KEY", "")
-    if not api_key:
-        raise ValueError("OPENAI_API_KEY is not set in your .env file.")
-
-    url = "https://api.openai.com/v1/audio/transcriptions"
-    headers = {"Authorization": f"Bearer {api_key}"}
-
-    with open(audio_path, "rb") as f:
-        files = {"file": f}
-        data = {"model": "whisper-1", "language": "en"}
-        response = requests.post(url, headers=headers, files=files, data=data, timeout=30)
-
-    if response.status_code != 200:
-        raise RuntimeError(f"OpenAI Whisper API error: {response.text}")
-
-    result = response.json()
-    return result.get("text", "").strip()
-
-
-# ---------------------------------------------------------------------------
-# 3. Local Whisper Transcriber (_transcribe_locally)
-# ---------------------------------------------------------------------------
-# Runs the speech recognition model directly on your laptop's CPU.
-# fp16=False ensures it runs smoothly on standard computer processors without GPU.
+# This runs the model directly on your CPU — no internet needed but requires
+# 'openai-whisper' + ffmpeg to be installed, and takes 10-30s to load on first use.
 def _transcribe_locally(audio_path: str) -> str:
-    """Transcribes audio using your local CPU without sending any data over the internet."""
-    _ensure_ffmpeg()
-    model = _get_whisper_model()
-    # fp16=False prevents warnings on CPU-only machines
+    """
+    Transcribes audio using the local Whisper model running on your CPU.
+    Only activated when WHISPER_MODE=local is set in .env.
+    """
+    import shutil
+
+    # Ensure ffmpeg is on PATH (needed by local whisper for audio decoding)
+    if not shutil.which("ffmpeg"):
+        try:
+            import imageio_ffmpeg
+            ffmpeg_bin = imageio_ffmpeg.get_ffmpeg_exe()
+            bin_dir = os.path.dirname(ffmpeg_bin)
+            # Alias to 'ffmpeg.exe' so whisper finds it by its expected name
+            target_path = os.path.join(bin_dir, "ffmpeg.exe" if os.name == "nt" else "ffmpeg")
+            if not os.path.exists(target_path):
+                shutil.copyfile(ffmpeg_bin, target_path)
+            if bin_dir not in os.environ.get("PATH", ""):
+                os.environ["PATH"] = bin_dir + os.pathsep + os.environ.get("PATH", "")
+                logger.info(f"[VocaMail] Registered bundled ffmpeg: {bin_dir}")
+        except Exception as err:
+            logger.warning(f"[VocaMail] Could not auto-register ffmpeg: {err}")
+
+    try:
+        import whisper
+    except ImportError:
+        raise RuntimeError(
+            "Local Whisper requires 'openai-whisper'. Run: pip install openai-whisper\n"
+            "Or set WHISPER_MODE=api in .env to use the OpenAI cloud API instead."
+        )
+
+    model_name = getattr(config, "WHISPER_MODEL", "base")
+    logger.info(f"[VocaMail] Loading local Whisper model '{model_name}'…")
+    model = whisper.load_model(model_name)
     result = model.transcribe(audio_path, language="en", fp16=False)
-    return result.get("text", "").strip()
+    transcript = result.get("text", "").strip()
+    logger.info(f"[VocaMail] Local Whisper transcribed: \"{transcript}\"")
+    return transcript
 
 
 # ---------------------------------------------------------------------------
-# 4. Master Transcribe Function with Automatic Privacy Cleanup
+# 3. Master Entry Point — transcribe_audio()
 # ---------------------------------------------------------------------------
-# This is the main entry point called by app.py:
-# 1. Takes the recorded audio file path.
-# 2. Transcribes it (locally or via API).
-# 3. Automatically deletes the audio file from disk for privacy.
-# 4. Returns the clean string of transcribed words.
+# Called by app.py POST /api/voice handler.
+# Automatically routes to API or local mode based on WHISPER_MODE in .env.
+# Always deletes the temp audio file after transcription for privacy.
 def transcribe_audio(audio_path: str, auto_delete: bool = True) -> str:
     """
-    Transcribes an audio file to text and automatically wipes the file for privacy.
+    Transcribes an audio file to text, then deletes it for privacy.
+
+    Args:
+        audio_path:  Path to the temporary audio file saved by Flask.
+        auto_delete: If True (default), deletes the file after transcription.
+
+    Returns:
+        Plain English string of everything the user said.
+
+    Raises:
+        FileNotFoundError: If the audio file doesn't exist.
+        ValueError:        If OPENAI_API_KEY is missing (API mode).
+        RuntimeError:      If Whisper fails to transcribe.
     """
     if not os.path.exists(audio_path):
-        raise FileNotFoundError(f"Audio file not found at: {audio_path}")
+        raise FileNotFoundError(f"Audio file not found: {audio_path}")
 
     try:
-        mode = getattr(config, "WHISPER_MODE", "local").lower()
+        mode = getattr(config, "WHISPER_MODE", "api").lower()
+        logger.info(f"[VocaMail] Transcription mode: {mode}")
 
         if mode == "api":
             transcript = _transcribe_via_api(audio_path)
         else:
             transcript = _transcribe_locally(audio_path)
 
-        logger.info(f"[VocaMail] Transcribed: \"{transcript}\"")
         return transcript
 
     finally:
-        # Privacy guarantee: Always delete the temporary recording after transcription
+        # Privacy guarantee: wipe the recording immediately after transcription
         if auto_delete and os.path.exists(audio_path):
             try:
                 os.remove(audio_path)
+                logger.debug(f"[VocaMail] Deleted temp audio: {audio_path}")
             except OSError as err:
-                logger.warning(f"[VocaMail] Could not delete temp audio file {audio_path}: {err}")
-
+                logger.warning(f"[VocaMail] Could not delete temp audio {audio_path}: {err}")
