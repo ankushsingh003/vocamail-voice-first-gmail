@@ -22,27 +22,50 @@ import "./GmailComposeModal.css";
 export default function GmailComposeModal({
   isOpen = false,
   initialDraft = null,
+  draft = null,
+  onDraftChange = null,
   isSending = false,
   onClose,
   onSend,
   onVoiceDictate,
   isVoiceActive = false,
 }) {
-  const [to, setTo] = useState("");
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
+  const currentDraft = draft || initialDraft || { to: "", subject: "", body: "" };
+  const [localTo, setLocalTo] = useState(currentDraft.to || "");
+  const [localSubject, setLocalSubject] = useState(currentDraft.subject || "");
+  const [localBody, setLocalBody] = useState(currentDraft.body || "");
   const [isMinimized, setIsMinimized] = useState(false);
 
-  // Sync state whenever initialDraft prop updates (e.g. on Reply, Forward, or voice draft)
+  // Sync state whenever draft or initialDraft prop updates (e.g. from Whisper voice transcription)
   useEffect(() => {
-    if (initialDraft) {
-      setTo(initialDraft.to || "");
-      setSubject(initialDraft.subject || "");
-      setBody(initialDraft.body || "");
+    const src = draft || initialDraft;
+    if (src) {
+      setLocalTo(src.to || "");
+      setLocalSubject(src.subject || "");
+      setLocalBody(src.body || "");
     }
-  }, [initialDraft]);
+  }, [draft, initialDraft]);
 
   if (!isOpen) return null;
+
+  const to = draft ? (draft.to ?? localTo) : localTo;
+  const subject = draft ? (draft.subject ?? localSubject) : localSubject;
+  const body = draft ? (draft.body ?? localBody) : localBody;
+
+  function handleToChange(val) {
+    setLocalTo(val);
+    if (onDraftChange) onDraftChange({ to: val, subject, body });
+  }
+
+  function handleSubjectChange(val) {
+    setLocalSubject(val);
+    if (onDraftChange) onDraftChange({ to, subject: val, body });
+  }
+
+  function handleBodyChange(val) {
+    setLocalBody(val);
+    if (onDraftChange) onDraftChange({ to, subject, body: val });
+  }
 
   // Handle send action
   function handleFormSubmit(e) {
@@ -143,7 +166,7 @@ export default function GmailComposeModal({
               className="compose-input"
               placeholder="Recipients"
               value={to}
-              onChange={(e) => setTo(e.target.value)}
+              onChange={(e) => handleToChange(e.target.value)}
               autoFocus
             />
           </div>
@@ -159,7 +182,7 @@ export default function GmailComposeModal({
               className="compose-input"
               placeholder="Subject"
               value={subject}
-              onChange={(e) => setSubject(e.target.value)}
+              onChange={(e) => handleSubjectChange(e.target.value)}
             />
           </div>
 
@@ -170,7 +193,7 @@ export default function GmailComposeModal({
               className="compose-textarea"
               placeholder="Compose your email here (or use voice)..."
               value={body}
-              onChange={(e) => setBody(e.target.value)}
+              onChange={(e) => handleBodyChange(e.target.value)}
               aria-label="Email message body"
             />
           </div>
