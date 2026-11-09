@@ -83,6 +83,13 @@ def login_required(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         if get_credentials() is None:
+            # If the browser is calling an API endpoint, return clean JSON 401
+            # instead of a 302 HTML redirect so React fetch handles it gracefully.
+            if request.path.startswith("/api/"):
+                return jsonify({
+                    "ok": False,
+                    "error": "Google session expired or not signed in. Please log in again."
+                }), 401
             return redirect(url_for("login"))
         return f(*args, **kwargs)
     return wrapper
@@ -470,6 +477,19 @@ def api_voice():
         "audio_url":  audio_url,
         "state":      get_state(),
     })
+
+
+# ---------------------------------------------------------------------------
+# Global JSON Error Handler for /api/* Endpoints
+# ---------------------------------------------------------------------------
+# Prevents Flask from returning raw HTML error pages to React fetch calls.
+@app.errorhandler(500)
+def handle_internal_server_error(e):
+    """Catches unhandled server crashes and returns clean JSON to API callers."""
+    logger.error(f"[VocaMail] Unhandled 500 server error: {e}")
+    if request.path.startswith("/api/"):
+        return jsonify({"ok": False, "error": f"Internal server error: {e}"}), 500
+    return f"Internal Server Error: {e}", 500
 
 
 # ---------------------------------------------------------------------------
