@@ -156,6 +156,7 @@ export default function GmailNavbar({
   onToggleVoice,
   onToggleSidebar,
   onHelpClick,
+  onOpenBriefing,
   onLogout,
   userName = "User",
 }) {
@@ -276,6 +277,20 @@ export default function GmailNavbar({
 
       {/* 3. Right: Support, Settings, Google Apps Grid, User Avatar */}
       <div className="header-right">
+        {/* ⚡ Morning Executive Briefing Button */}
+        {onOpenBriefing && (
+          <button
+            type="button"
+            className="briefing-trigger-btn"
+            onClick={onOpenBriefing}
+            title="Listen to 60-Second Morning Executive Briefing"
+            aria-label="Morning Executive Briefing"
+          >
+            <span style={{ fontSize: "14px" }}>⚡</span>
+            <span>Briefing</span>
+          </button>
+        )}
+
         {/* Support Question Mark Button */}
         <button
           type="button"
