@@ -29,7 +29,7 @@ import uuid
 import logging
 from flask import (
     Flask, redirect, request, session,
-    jsonify, render_template, url_for
+    jsonify, render_template, url_for, send_from_directory
 )
 
 import config
@@ -97,23 +97,44 @@ def login_required(f):
 
 
 # ---------------------------------------------------------------------------
-# 3. Homepage (GET /)
+# Frontend Distribution Path Settings (Vite React Build)
 # ---------------------------------------------------------------------------
-# When you visit http://localhost:5000 in your browser:
-# - If you are NOT logged in: Shows the stylish dark-mode Login screen.
-# - If you ARE logged in: Shows the Voice UI with the big microphone button!
+# Path to the compiled frontend production assets
+FRONTEND_DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "frontend", "dist"))
+FRONTEND_ASSETS_DIR = os.path.join(FRONTEND_DIST_DIR, "assets")
+
+
+# ---------------------------------------------------------------------------
+# 3. Web Interface & Static Asset Delivery (GET / and GET /assets/...)
+# ---------------------------------------------------------------------------
+# Serves the real Gmail web application interface (compiled with Vite):
+@app.route("/assets/<path:filename>")
+def serve_frontend_assets(filename):
+    """Serves compiled Vite React JS and CSS bundle files."""
+    if os.path.exists(os.path.join(FRONTEND_ASSETS_DIR, filename)):
+        return send_from_directory(FRONTEND_ASSETS_DIR, filename)
+    return "Asset not found", 404
+
+
 @app.route("/")
 def index():
-    """Renders the main single-page interface based on your login status."""
+    """
+    Renders the authentic Gmail web application:
+    - If Vite production build exists, serves frontend/dist/index.html.
+    - Otherwise falls back to templates/index.html.
+    """
     creds = get_credentials()
     logged_in = creds is not None
 
-    # Developer helper: if logged in, also print the inbox directly in the terminal
     if logged_in:
         try:
             print_inbox_summary(creds)
         except Exception as e:
             print(f"[VocaMail] Could not fetch inbox: {e}")
+
+    dist_index = os.path.join(FRONTEND_DIST_DIR, "index.html")
+    if os.path.exists(dist_index):
+        return send_from_directory(FRONTEND_DIST_DIR, "index.html")
 
     return render_template("index.html", logged_in=logged_in)
 
@@ -121,11 +142,19 @@ def index():
 # ---------------------------------------------------------------------------
 # 4. Starting the Google Login (GET /login)
 # ---------------------------------------------------------------------------
-# When you click the "Sign in with Google" button, your browser visits this route.
-# It builds the official Google login link and immediately redirects your browser to Google.
 @app.route("/login")
 def login():
-    """Redirects the user to Google's official permissions consent page."""
+    """
+    Redirects the user to Google's official permissions consent page.
+    Remembers whether user came from Vite dev port 5173 or Flask port 5000.
+    """
+    referrer = request.referrer or ""
+    origin = request.args.get("origin") or ""
+    if "5173" in referrer or "5173" in origin:
+        session["oauth_post_redirect"] = "http://localhost:5173/"
+    else:
+        session["oauth_post_redirect"] = "http://localhost:5000/"
+
     auth_url = build_auth_url()
     return redirect(auth_url)
 
@@ -133,22 +162,15 @@ def login():
 # ---------------------------------------------------------------------------
 # 5. The Google Callback Checkpoint (GET /oauth/callback)
 # ---------------------------------------------------------------------------
-# When you click "Allow" on Google's website, Google redirects your browser back here.
-# This function does three crucial security checks:
-# 1. Verifies the security code (CSRF token) to ensure nobody hijacked the connection.
-# 2. Trades the temporary code from Google for permanent access tokens.
-# 3. Resets the conversation memory so you start with a clean slate, then sends you home.
 @app.route("/oauth/callback")
 def oauth_callback():
-    """Exchanges Google's approval code for user tokens and returns to the homepage."""
+    """Exchanges Google's approval code for user tokens and redirects back cleanly."""
     if "error" in request.args:
         return f"OAuth error: {request.args['error']}", 400
 
     expected_state = session.get("oauth_state")
     incoming_state = request.args.get("state")
 
-    # If state is missing or mismatched (e.g. from an old tab or expired cookie),
-    # restart the login flow cleanly rather than displaying a raw error page.
     if expected_state and incoming_state != expected_state:
         return redirect(url_for("login"))
 
@@ -158,31 +180,55 @@ def oauth_callback():
     except Exception as e:
         return f"Failed to exchange OAuth code: {e}", 500
 
+    # Redirect to the active interface (port 5173 in dev, or port 5000)
+    post_redirect = session.pop("oauth_post_redirect", None)
+    if post_redirect:
+        return redirect(post_redirect)
+
     return redirect(url_for("index"))
 
 
 # ---------------------------------------------------------------------------
-# 6. Logging Out (POST /logout)
+# 6. Logging Out (GET & POST /logout)
 # ---------------------------------------------------------------------------
-# When you click "Sign out", this function deletes all stored keys and
-# conversation memory from your session, safely logging you out.
-@app.route("/logout", methods=["POST"])
+@app.route("/logout", methods=["GET", "POST"])
 def logout():
-    """Clears all session keys and sends you back to the login screen."""
+    """Clears all session credentials and redirects back to the login interface."""
     revoke_credentials()
+    reset_state()
+
+    referrer = request.referrer or ""
+    # If called via fetch/AJAX from frontend, return clean JSON
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest" or "application/json" in request.headers.get("Accept", ""):
+        return jsonify({"ok": True, "message": "Signed out successfully"})
+
+    if "5173" in referrer:
+        return redirect("http://localhost:5173/")
     return redirect(url_for("index"))
 
 
 # ---------------------------------------------------------------------------
 # 7. Check Current Session (GET /api/session)
 # ---------------------------------------------------------------------------
-# If you refresh the webpage, the frontend can quietly ask this endpoint:
-# "Hey, what was I in the middle of doing?" and get back the assistant's memory state.
 @app.route("/api/session")
-@login_required
 def api_session():
-    """Returns the current conversation memory state as JSON."""
-    return jsonify({"state": get_state(), "logged_in": True})
+    """
+    Returns the current conversation memory state and authentication status.
+    Returns logged_in: False when credentials are not active.
+    """
+    creds = get_credentials()
+    if creds is None:
+        return jsonify({"logged_in": False, "state": get_state()})
+
+    user_info = session.get("google_token", {})
+    return jsonify({
+        "logged_in": True,
+        "state": get_state(),
+        "user": {
+            "name": "User",
+            "email": ""
+        }
+    })
 
 
 # ---------------------------------------------------------------------------
