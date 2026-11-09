@@ -119,8 +119,19 @@ export default function App() {
         });
 
         if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: "Unknown server error" }));
-          throw new Error(err.error || `Server error ${res.status}`);
+          if (res.status === 401) {
+            setIsLoggedIn(false);
+            throw new Error("Session expired. Please sign in with Google again.");
+          }
+          let errorMsg = `Server error ${res.status}`;
+          try {
+            const err = await res.json();
+            if (err && err.error) errorMsg = err.error;
+          } catch {
+            const raw = await res.text().catch(() => "");
+            if (raw && raw.length < 100) errorMsg = raw;
+          }
+          throw new Error(errorMsg);
         }
 
         const data = await res.json();
