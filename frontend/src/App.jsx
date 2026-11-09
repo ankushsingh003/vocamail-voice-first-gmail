@@ -30,6 +30,7 @@ import GmailEmailTable from "./components/GmailEmailTable";
 import GmailDetailView from "./components/GmailDetailView";
 import GmailComposeModal from "./components/GmailComposeModal";
 import BriefingModal from "./components/BriefingModal";
+import SettingsModal from "./components/SettingsModal";
 import LoginCard from "./components/LoginCard";
 
 // Microphone capture utility (used by both search mic and compose dictation)
@@ -61,6 +62,12 @@ export default function App() {
   const [isBriefingOpen, setIsBriefingOpen] = useState(false);
   const [briefingData, setBriefingData] = useState(null);
   const [isLoadingBriefing, setIsLoadingBriefing] = useState(false);
+
+  // ---- Settings & Labels State ----
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settings, setSettings] = useState({ density: "default", voiceSpeed: "normal", soundCues: true });
+  const [labels, setLabels] = useState(["Work", "Personal", "Receipts"]);
+  const [activeLabel, setActiveLabel] = useState(null);
 
   // ---- Voice Recording State (shared by search mic & compose dictation) ----
   // voiceTarget: "search" = mic in search bar, "compose" = dictate in compose window
@@ -437,6 +444,7 @@ export default function App() {
         isRecording={isRecording && voiceTarget === "search"}
         onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
         onOpenBriefing={handleOpenBriefing}
+        onOpenSettings={() => setIsSettingsOpen(true)}
         onLogout={() => {
           fetch("/logout").then(() => setIsLoggedIn(false));
         }}
@@ -445,17 +453,27 @@ export default function App() {
 
       {/* 2. Main 2-Column Body: Sidebar + Content */}
       <div className="gmail-body-layout">
-        {/* Left Sidebar: Compose pill + folder list */}
+        {/* Left Sidebar: Compose pill + folder list + labels */}
         <GmailSidebar
           currentFolder={activeFolder}
           onSelectFolder={(folder) => {
             setActiveFolder(folder);
+            setActiveLabel(null);
             setSelectedEmail(null);
             setSearchQuery("");
           }}
           onOpenCompose={() => handleOpenCompose()}
           unreadCount={emails.filter((m) => m.is_unread).length}
           isCollapsed={isSidebarCollapsed}
+          labels={labels}
+          activeLabel={activeLabel}
+          onSelectLabel={(lbl) => {
+            setActiveLabel(lbl);
+            setSelectedEmail(null);
+            setSearchQuery(lbl);
+            loadEmails(activeFolder, lbl);
+          }}
+          onAddLabel={(newLbl) => setLabels((prev) => [...prev, newLbl])}
         />
 
         {/* Central Content: Email Table or Email Detail */}
@@ -507,6 +525,14 @@ export default function App() {
         briefingData={briefingData}
         isLoading={isLoadingBriefing}
         onOpenEmail={handleOpenEmail}
+      />
+
+      {/* 5. Quick Settings Side Drawer */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        settings={settings}
+        onUpdateSettings={(newSettings) => setSettings(newSettings)}
       />
     </div>
   );
