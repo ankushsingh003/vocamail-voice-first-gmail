@@ -123,6 +123,19 @@ class TestIntentDetection(unittest.TestCase):
     # -----------------------------------------------------------------------
     # 7. System Commands & Unknown Input Tests
     # -----------------------------------------------------------------------
+    def test_briefing_commands(self):
+        """Verifies morning executive briefing voice triggers."""
+        phrases = [
+            "give me my morning briefing",
+            "morning briefing",
+            "vocamail briefing",
+            "play briefing",
+        ]
+        for phrase in phrases:
+            with self.subTest(phrase=phrase):
+                res = detect_intent(phrase)
+                self.assertEqual(res["intent"], "briefing")
+
     def test_help_command(self):
         """Verifies help intent."""
         res = detect_intent("what can you do")
