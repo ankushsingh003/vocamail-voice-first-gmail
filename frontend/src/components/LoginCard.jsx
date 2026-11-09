@@ -1,18 +1,3 @@
-/**
- * frontend/src/components/LoginCard.jsx — Authentic Google Account Sign-In Card
- * ==============================================================================
- * Renders an authentic, clean Google account sign-in screen matching the real
- * Google Accounts login flow:
- *
- * 1. Official multi-colored Google logo.
- * 2. "Sign in with Google to continue to Gmail".
- * 3. Feature highlights showing real Gmail voice capabilities:
- *    - Full authentic Gmail inbox view.
- *    - Senior developer voice assistant with push-to-talk.
- *    - Voice dictation & auto-reading of emails.
- * 4. Official "Sign in with Google" action button navigating to /login.
- */
-
 import React from "react";
 import "./LoginCard.css";
 
@@ -20,7 +5,7 @@ export default function LoginCard() {
   return (
     <section className="login-screen-clean" aria-labelledby="login-heading">
       <div className="google-signin-card">
-        {/* 1. Official Google 4-Color Logo */}
+        {}
         <div className="google-logo-wrapper" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="40" height="40">
             <path
@@ -42,13 +27,13 @@ export default function LoginCard() {
           </svg>
         </div>
 
-        {/* 2. Headings */}
+        {}
         <h1 id="login-heading" className="google-heading">
           Sign in
         </h1>
         <p className="google-subheading">to continue to Gmail</p>
 
-        {/* 3. Voice Feature Highlights */}
+        {}
         <div className="google-features-list" aria-label="Features">
           <div className="google-feature-item">
             <span>✨</span>
@@ -64,7 +49,7 @@ export default function LoginCard() {
           </div>
         </div>
 
-        {/* 4. Official Sign in Button */}
+        {}
         <a
           id="btn-login"
           href="/login"
@@ -93,7 +78,7 @@ export default function LoginCard() {
           Sign in with Google
         </a>
 
-        {/* 5. Privacy Assurance */}
+        {}
         <footer className="google-card-footer">
           To continue, Google will share your name, email address, and language preference with VocaMail.
         </footer>
