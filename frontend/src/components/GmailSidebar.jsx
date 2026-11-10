@@ -14,14 +14,16 @@ export default function GmailSidebar({
 }) {
   const [isAddLabelOpen, setIsAddLabelOpen] = React.useState(false);
   const [newLabelText, setNewLabelText] = React.useState("");
+
   const folders = [
     {
       id: "INBOX",
       label: "Inbox",
       count: unreadCount || null,
       icon: (
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-          <path d="M19 3H4.99c-1.11 0-1.98.89-1.98 2L3 19c0 1.1.88 2 1.99 2H19c1.1 0 2-.9 2-2V5c0-1.11-.9-2-2-2zm0 12h-4c0 1.66-1.35 3-3 3s-3-1.34-3-3H4.99V5H19v10z" />
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+          <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
         </svg>
       ),
     },
@@ -30,8 +32,8 @@ export default function GmailSidebar({
       label: "Starred",
       count: null,
       icon: (
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
         </svg>
       ),
     },
@@ -40,8 +42,9 @@ export default function GmailSidebar({
       label: "Snoozed",
       count: null,
       icon: (
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-          <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
         </svg>
       ),
     },
@@ -50,18 +53,20 @@ export default function GmailSidebar({
       label: "Sent",
       count: null,
       icon: (
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13" />
+          <polygon points="22 2 15 22 11 13 2 9 22 2" />
         </svg>
       ),
     },
     {
       id: "DRAFT",
       label: "Drafts",
-      count: 1,
+      count: null,
       icon: (
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-          <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
         </svg>
       ),
     },
@@ -70,119 +75,163 @@ export default function GmailSidebar({
       label: "Trash",
       count: null,
       icon: (
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+          <path d="M10 11v6M14 11v6" />
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
         </svg>
       ),
     },
   ];
 
+  const labelColors = { Work: "#3b82f6", Personal: "#10b981", Receipts: "#f59e0b" };
+
   return (
     <aside
-      className={`gmail-sidebar ${isCollapsed ? "collapsed" : ""}`}
+      className={`app-sidebar ${isCollapsed ? "collapsed" : ""}`}
       role="navigation"
-      aria-label="Mail folders"
+      aria-label="Mail navigation"
     >
-      {}
-      <div className="compose-btn-wrap">
+      <div className="sidebar-compose-wrap">
         <button
           type="button"
-          className="compose-btn"
+          className="sidebar-compose-btn"
           onClick={onOpenCompose}
-          aria-label="Compose new email (or speak 'compose email')"
+          aria-label="Compose new email"
         >
-          <svg className="compose-icon-svg" viewBox="0 0 24 24">
-            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
           </svg>
-          <span className="compose-text">Compose</span>
+          {!isCollapsed && <span>Compose</span>}
         </button>
       </div>
 
-      {}
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav" aria-label="Folders">
         {folders.map((folder) => {
           const isActive = currentFolder === folder.id;
           return (
             <button
               key={folder.id}
               type="button"
-              className={`nav-item ${isActive ? "active" : ""}`}
+              className={`sidebar-nav-item ${isActive ? "active" : ""}`}
               onClick={() => onSelectFolder && onSelectFolder(folder.id)}
               aria-current={isActive ? "page" : undefined}
             >
-              <span className="nav-item-icon" aria-hidden="true">
-                {folder.icon}
-              </span>
-              <span className="nav-item-label">{folder.label}</span>
-              {folder.count && (
-                <span className="nav-item-count">{folder.count}</span>
+              <span className="sidebar-nav-icon">{folder.icon}</span>
+              {!isCollapsed && (
+                <>
+                  <span className="sidebar-nav-label">{folder.label}</span>
+                  {folder.count != null && (
+                    <span className="sidebar-nav-count">{folder.count}</span>
+                  )}
+                </>
               )}
             </button>
           );
         })}
       </nav>
 
-      {}
       {!isCollapsed && (
-        <div className="sidebar-labels-wrapper">
-          <div className="sidebar-section-title">
-            <span>Labels</span>
-            <button
-              type="button"
-              className="sidebar-add-btn"
-              aria-label="Create new label"
-              title="Create new label"
-              onClick={() => setIsAddLabelOpen((prev) => !prev)}
-            >
-              +
+        <>
+          <div className="sidebar-section">
+            <div className="sidebar-section-header">
+              <span className="sidebar-section-title">Smart Workspace</span>
+            </div>
+            <button type="button" className="sidebar-nav-item sidebar-smart-item">
+              <span className="sidebar-nav-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
+              </span>
+              <span className="sidebar-nav-label">Automations</span>
+              <span className="sidebar-nav-badge">3</span>
+            </button>
+            <button type="button" className="sidebar-nav-item sidebar-smart-item">
+              <span className="sidebar-nav-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 11 12 14 22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
+              </span>
+              <span className="sidebar-nav-label">Follow-ups</span>
             </button>
           </div>
 
-          {}
-          {isAddLabelOpen && (
-            <form
-              className="sidebar-new-label-form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (newLabelText.trim()) {
-                  if (onAddLabel) onAddLabel(newLabelText.trim());
-                  setNewLabelText("");
-                  setIsAddLabelOpen(false);
-                }
-              }}
-            >
-              <input
-                type="text"
-                className="sidebar-new-label-input"
-                placeholder="New label name..."
-                value={newLabelText}
-                onChange={(e) => setNewLabelText(e.target.value)}
-                autoFocus
-              />
-              <button type="submit" className="sidebar-new-label-save">
-                Add
+          <div className="sidebar-section">
+            <div className="sidebar-section-header">
+              <span className="sidebar-section-title">Labels</span>
+              <button
+                type="button"
+                className="sidebar-add-label-btn"
+                onClick={() => setIsAddLabelOpen((p) => !p)}
+                aria-label="Add label"
+                title="Add label"
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
               </button>
-            </form>
-          )}
+            </div>
 
-          {}
-          <div className="sidebar-labels-list">
+            {isAddLabelOpen && (
+              <form
+                className="sidebar-add-label-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (newLabelText.trim()) {
+                    if (onAddLabel) onAddLabel(newLabelText.trim());
+                    setNewLabelText("");
+                    setIsAddLabelOpen(false);
+                  }
+                }}
+              >
+                <input
+                  type="text"
+                  className="sidebar-label-input"
+                  placeholder="Label name..."
+                  value={newLabelText}
+                  onChange={(e) => setNewLabelText(e.target.value)}
+                  autoFocus
+                />
+                <button type="submit" className="sidebar-label-save">Add</button>
+              </form>
+            )}
+
             {labels.map((labelName) => {
               const isActive = activeLabel === labelName;
+              const color = labelColors[labelName] || "#6b7280";
               return (
                 <button
                   key={labelName}
                   type="button"
-                  className={`nav-item label-item ${isActive ? "active" : ""}`}
+                  className={`sidebar-nav-item ${isActive ? "active" : ""}`}
                   onClick={() => onSelectLabel && onSelectLabel(labelName)}
                 >
-                  <span className="nav-item-icon label-tag-icon">🏷️</span>
-                  <span className="nav-item-label">{labelName}</span>
+                  <span className="sidebar-nav-icon">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                      <line x1="7" y1="7" x2="7.01" y2="7" strokeWidth="3" />
+                    </svg>
+                  </span>
+                  <span className="sidebar-nav-label">{labelName}</span>
                 </button>
               );
             })}
           </div>
-        </div>
+
+          <div className="sidebar-storage">
+            <div className="storage-bar-wrap">
+              <div className="storage-bar">
+                <div className="storage-bar-fill" style={{ width: "21%" }} />
+              </div>
+            </div>
+            <span className="storage-text">3.2 GB of 15 GB used</span>
+            <button type="button" className="manage-storage-btn">Manage storage</button>
+          </div>
+        </>
       )}
     </aside>
   );
