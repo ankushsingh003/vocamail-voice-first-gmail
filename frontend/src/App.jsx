@@ -421,8 +421,19 @@ export default function App() {
 
         <CopilotPanel
           selectedEmail={selectedEmail}
-          onDraftReply={(email) => handleReply(email)}
+          onDraftReply={(email, suggestedReply) => {
+            if (suggestedReply) {
+              handleOpenCompose({
+                to: email.sender || email.from || "",
+                subject: email.subject?.startsWith("Re:") ? email.subject : `Re: ${email.subject || ""}`,
+                body: suggestedReply,
+              });
+            } else {
+              handleReply(email);
+            }
+          }}
           onOpenBriefing={handleOpenBriefing}
+          onOpenEmail={handleOpenEmail}
         />
       </div>
 
