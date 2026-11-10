@@ -45,7 +45,7 @@ export default function GmailNavbar({
             <path d="M4 8l8 5 8-5" stroke="#4f78e8" strokeWidth="2" strokeLinecap="round" />
             <rect x="4" y="7" width="16" height="11" rx="2" stroke="#4f78e8" strokeWidth="2" fill="none" />
           </svg>
-          <span className="navbar-brand-text">GGmail</span>
+          <span className="navbar-brand-text">VocaMail</span>
         </div>
       </div>
 
