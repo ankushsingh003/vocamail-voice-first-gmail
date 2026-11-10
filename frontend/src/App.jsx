@@ -7,6 +7,7 @@ import GmailComposeModal from "./components/GmailComposeModal";
 import BriefingModal from "./components/BriefingModal";
 import SettingsModal from "./components/SettingsModal";
 import LoginCard from "./components/LoginCard";
+import CopilotPanel from "./components/CopilotPanel";
 
 import { startRecording, stopRecording } from "./utils/audioRecorder";
 
@@ -246,15 +247,12 @@ export default function App() {
   async function handleOpenBriefing() {
     setIsBriefingOpen(true);
     if (briefingData) return;
-
     setIsLoadingBriefing(true);
     try {
       const res = await fetch("/api/briefing", { method: "POST" });
       if (res.ok) {
         const data = await res.json();
         setBriefingData(data);
-      } else {
-        console.error("[VocaMail] Failed to load briefing:", res.status);
       }
     } catch (err) {
       console.error("[VocaMail] Briefing fetch error:", err);
@@ -286,48 +284,26 @@ export default function App() {
       const formData = new FormData();
       formData.append("audio", audioBlob, "recording.webm");
 
-      const res = await fetch("/api/voice", {
-        method: "POST",
-        body: formData,
-      });
+      const res = await fetch("/api/voice", { method: "POST", body: formData });
 
       if (!res.ok) {
-        if (res.status === 401) {
-          setIsLoggedIn(false);
-          return;
-        }
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.error || `Server error ${res.status}`);
+        if (res.status === 401) { setIsLoggedIn(false); return; }
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Voice processing failed.");
+        return;
       }
 
       const data = await res.json();
-      const spokenText = data.text || data.transcript || "";
 
-      if (target === "search") {
-        const query = data.search_query || data.transcript || spokenText;
-        if (query) {
-          setSearchQuery(query);
-          loadEmails(activeFolder, query);
-        }
-      } else if (target === "compose") {
-        if (data.transcript) {
-          setComposeDraft((prev) => ({
-            ...prev,
-            body: prev.body ? `${prev.body} ${data.transcript}` : data.transcript,
-          }));
-        }
-      }
+      if (data.state) setVocamailState(data.state);
 
-      if (data.state) {
-        setVocamailState(data.state);
-        if (data.state.mode === "composing") {
-          setIsComposeOpen(true);
-          setComposeDraft({
-            to: data.state.draft?.to || "",
-            subject: data.state.draft?.subject || "",
-            body: data.state.draft?.body || "",
-          });
-        }
+      if (data.state?.mode === "composing" && data.state?.draft) {
+        setIsComposeOpen(true);
+        setComposeDraft({
+          to: data.state.draft?.to || "",
+          subject: data.state.draft?.subject || "",
+          body: data.state.draft?.body || "",
+        });
       }
 
       if (data.briefing_data) {
@@ -357,27 +333,25 @@ export default function App() {
 
   if (isCheckingAuth) {
     return (
-      <div className="gmail-loading-screen" role="status" aria-live="polite">
-        <div className="gmail-loading-spinner" />
-        <span>Loading Gmail...</span>
+      <div className="app-loading-screen" role="status" aria-live="polite">
+        <div className="app-loading-spinner" />
+        <span>Loading GGmail...</span>
       </div>
     );
   }
 
   if (!isLoggedIn) {
     return (
-      <main className="gmail-login-screen">
+      <main className="app-login-screen">
         <LoginCard />
       </main>
     );
   }
 
   return (
-    <div className="gmail-app-root">
-      {}
+    <div className="app-root">
       <audio ref={audioRef} aria-hidden="true" style={{ display: "none" }} />
 
-      {}
       <GmailNavbar
         searchQuery={searchQuery}
         onSearchChange={(q) => setSearchQuery(q)}
@@ -387,15 +361,11 @@ export default function App() {
         onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
         onOpenBriefing={handleOpenBriefing}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        onLogout={() => {
-          fetch("/logout").then(() => setIsLoggedIn(false));
-        }}
+        onLogout={() => { fetch("/logout").then(() => setIsLoggedIn(false)); }}
         userName={userProfile.name}
       />
 
-      {}
-      <div className="gmail-body-layout">
-        {}
+      <div className="app-body">
         <GmailSidebar
           currentFolder={activeFolder}
           onSelectFolder={(folder) => {
@@ -418,8 +388,7 @@ export default function App() {
           onAddLabel={(newLbl) => setLabels((prev) => [...prev, newLbl])}
         />
 
-        {}
-        <main className="gmail-main-content-region" id="main-content">
+        <main className="app-main" id="main-content">
           {selectedEmail ? (
             <GmailDetailView
               email={selectedEmail}
@@ -444,12 +413,19 @@ export default function App() {
               onTrash={handleTrashEmail}
               onMarkRead={handleMarkRead}
               onToggleStar={handleToggleStar}
+              onOpenBriefing={handleOpenBriefing}
+              currentFolder={activeFolder}
             />
           )}
         </main>
+
+        <CopilotPanel
+          selectedEmail={selectedEmail}
+          onDraftReply={(email) => handleReply(email)}
+          onOpenBriefing={handleOpenBriefing}
+        />
       </div>
 
-      {}
       <GmailComposeModal
         isOpen={isComposeOpen}
         draft={composeDraft}
@@ -461,7 +437,6 @@ export default function App() {
         isVoiceActive={isRecording && voiceTarget === "compose"}
       />
 
-      {}
       <BriefingModal
         isOpen={isBriefingOpen}
         onClose={() => setIsBriefingOpen(false)}
@@ -470,7 +445,6 @@ export default function App() {
         onOpenEmail={handleOpenEmail}
       />
 
-      {}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}

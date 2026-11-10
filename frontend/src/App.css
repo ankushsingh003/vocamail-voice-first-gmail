@@ -1,35 +1,42 @@
-.gmail-app-root {
-  width: 100vw;
-  height: 100vh;
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
   margin: 0;
   padding: 0;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: #f5f7ff;
+  color: #1a1a2e;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-root {
+  width: 100vw;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f6f8fc;
-  color: #1f1f1f;
   overflow: hidden;
-  font-family: Roboto, Arial, sans-serif;
-  position: relative;
+  background: #f5f7ff;
 }
 
-.gmail-body-layout {
+.app-body {
   display: flex;
   flex: 1;
-  height: calc(100vh - 64px);
   overflow: hidden;
-  position: relative;
+  min-height: 0;
 }
 
-.gmail-main-content-region {
+.app-main {
   flex: 1;
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  min-width: 0; 
+  min-width: 0;
 }
 
-.gmail-login-screen {
+.app-login-screen {
   width: 100vw;
   height: 100vh;
   display: flex;
@@ -39,7 +46,7 @@
   padding: 24px;
 }
 
-.gmail-loading-screen {
+.app-loading-screen {
   width: 100vw;
   height: 100vh;
   display: flex;
@@ -47,30 +54,30 @@
   align-items: center;
   justify-content: center;
   gap: 16px;
-  background-color: #ffffff;
-  color: #0b57d0;
-  font-family: "Google Sans", Roboto, sans-serif;
-  font-size: 18px;
+  background: #fff;
+  color: #3b5bdb;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 16px;
   font-weight: 500;
 }
 
-.gmail-loading-spinner {
-  width: 44px;
-  height: 44px;
-  border: 4px solid #e8f0fe;
-  border-top-color: #0b57d0;
+.app-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e0e7ff;
+  border-top-color: #3b5bdb;
   border-radius: 50%;
-  animation: spinLoader 0.9s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
-@keyframes spinLoader {
+@keyframes spin {
   to { transform: rotate(360deg); }
 }
 
 kbd {
   display: inline-block;
   padding: 2px 6px;
-  background-color: #f1f3f4;
+  background: #f1f3f4;
   border: 1px solid #dadce0;
   border-radius: 4px;
   font-family: inherit;
