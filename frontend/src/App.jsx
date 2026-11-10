@@ -335,7 +335,7 @@ export default function App() {
     return (
       <div className="app-loading-screen" role="status" aria-live="polite">
         <div className="app-loading-spinner" />
-        <span>Loading GGmail...</span>
+        <span>Loading VocaMail...</span>
       </div>
     );
   }
