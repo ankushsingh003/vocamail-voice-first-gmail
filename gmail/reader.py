@@ -1,6 +1,7 @@
 import logging
 from gmail.client import list_inbox, search_messages
 from google.oauth2.credentials import Credentials
+from core.action_detector import detect_all_action_items
 
 logger = logging.getLogger(__name__)
 
@@ -67,10 +68,25 @@ def narrate_email(creds: Credentials, email_index: int = 0) -> str:
     if len(body) > 800:
         body = body[:800].strip() + "... Message continues but has been trimmed for length."
 
+    actions = detect_all_action_items(subject=subject, sender=sender, body=body)
+    announcements = []
+    if actions.get("meeting", {}).get("detected") and actions["meeting"].get("date_str"):
+        announcements.append(f"Meeting proposed for {actions['meeting']['date_str']}.")
+    if actions.get("invoice", {}).get("detected"):
+        inv = actions["invoice"]
+        inv_str = f"Invoice due {inv.get('due_date', 'soon')}"
+        if inv.get("amount"):
+            inv_str += f" for {inv['amount']}"
+        announcements.append(inv_str + ".")
+    if actions.get("meeting_link"):
+        announcements.append(f"{actions['meeting_link']['platform']} link detected.")
+
+    action_text = f" Action items: {' '.join(announcements)} " if announcements else " "
+
     spoken = (
         f"Reading email {email_index + 1}. "
         f"From {sender}. "
-        f"Subject: {subject}. "
+        f"Subject: {subject}.{action_text}"
         f"Sent: {date}. "
         f"Body: {body}"
     )
@@ -104,7 +120,10 @@ def get_help_text() -> str:
         "Here is what you can ask me. "
         "Say 'give me my briefing' to hear your morning executive podcast. "
         "Say 'read my inbox' to hear your recent emails. "
-        "Say 'read email 1' to hear a full email. "
+        "Say 'read email 1' to hear a full email and detected action items. "
+        "Say 'add to calendar' to schedule an extracted meeting. "
+        "Say 'join meeting' or 'join zoom' to open a video call. "
+        "Say 'set reminder' to flag an invoice deadline. "
         "Say 'search for' followed by a keyword to find specific emails. "
         "Say 'archive email 1' to move an email out of your inbox. "
         "Say 'delete email 1' to send it to the trash. "
