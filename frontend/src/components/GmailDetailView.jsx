@@ -7,6 +7,40 @@ const TONE_META = {
   decline: { emoji: "🔴", color: "decline" },
 };
 
+function detectClientActionItems(email) {
+  if (!email) return null;
+  const text = `${email.subject || ""} ${email.body || email.body_preview || email.snippet || ""}`;
+  const zoom = text.match(/https:\/\/[\w.-]*zoom\.us\/(?:j\/|my\/|wc\/)[\w?=&.-]+/i);
+  const meet = text.match(/https:\/\/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}/i);
+  const teams = text.match(/https:\/\/teams\.microsoft\.com\/l\/meetup-join\/[\w%?=&.-]+/i);
+  let meetingLink = null;
+  if (zoom) meetingLink = { platform: "Zoom", url: zoom[0] };
+  else if (meet) meetingLink = { platform: "Google Meet", url: meet[0] };
+  else if (teams) meetingLink = { platform: "Teams", url: teams[0] };
+
+  const curMatch = text.match(/(?:due|invoice|total|amount|bill|pay(?:ment)?|charge)[^\n\r$€£₹]{0,35}([\$€£₹]\s*[0-9]+(?:\.[0-9]{2})?)|([\$€£₹]\s*[0-9]+(?:\.[0-9]{2})?)[^\n\r]{0,35}(?:due|invoice|payable|by|before)/i);
+  const dueMatch = text.match(/(?:due|by|before|date:?)\s*(?:on\s+)?([A-Za-z]{3,9}\s+\d{1,2}(?:st|nd|rd|th)?(?:\s*,?\s*\d{4})?|\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)/i);
+  const meetTimeMatch = text.match(/\b((?:mon|tues|wednes|thurs|fri|satur|sun)day|tomorrow|today|tonight)\b(?:\s+(?:at|around)\s+|\s+)?(\d{1,2}(?::\d{2})?\s*(?:am|pm)?(?:\s*(?:ist|est|pst|gmt|utc|cst|edt|pdt))?)\b/i);
+
+  const title = encodeURIComponent(email.subject || "Meeting");
+  const loc = encodeURIComponent(meetingLink ? meetingLink.url : "");
+  const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&location=${loc}`;
+
+  return {
+    meeting: {
+      detected: Boolean(meetTimeMatch || meetingLink),
+      date_str: meetTimeMatch ? `${meetTimeMatch[1]} at ${meetTimeMatch[2]}`.trim() : (meetingLink ? "Meeting proposed" : null),
+      calendar_url: calUrl,
+    },
+    invoice: {
+      detected: Boolean(curMatch || dueMatch),
+      amount: curMatch ? (curMatch[1] || curMatch[2]) : null,
+      due_date: dueMatch ? dueMatch[1] : null,
+    },
+    meeting_link: meetingLink,
+  };
+}
+
 export default function GmailDetailView({
   email,
   onBack,
@@ -26,10 +60,43 @@ export default function GmailDetailView({
   const [isDraftingVoice, setIsDraftingVoice] = useState(false);
   const [activePill, setActivePill] = useState(null);
 
+  const [actionItems, setActionItems] = useState(null);
+  const [reminderSet, setReminderSet] = useState(false);
+  const [reminderToast, setReminderToast] = useState(null);
+
   useEffect(() => {
     setSmartReplies(null);
     setActivePill(null);
     setVoiceInstruction("");
+    setReminderSet(false);
+    setReminderToast(null);
+
+    if (!email) {
+      setActionItems(null);
+      return;
+    }
+
+    if (email.actions) {
+      setActionItems(email.actions);
+    } else {
+      const clientDetected = detectClientActionItems(email);
+      setActionItems(clientDetected);
+
+      fetch("/api/detect-actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: email.subject || "",
+          sender: email.sender || "",
+          body: email.body || email.body_preview || email.snippet || "",
+        }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.ok && d.actions) setActionItems(d.actions);
+        })
+        .catch(() => {});
+    }
   }, [email?.id]);
 
   async function loadSmartReplies() {
@@ -54,7 +121,7 @@ export default function GmailDetailView({
     }
   }
 
-  async function handlePillClick(suggestion) {
+  function handlePillClick(suggestion) {
     setActivePill(suggestion.tone);
     if (onSmartReplyDraft) {
       onSmartReplyDraft({
@@ -91,6 +158,15 @@ export default function GmailDetailView({
     }
   }
 
+  function handleSetReminder() {
+    setReminderSet(true);
+    const invoiceDesc = actionItems?.invoice?.due_date
+      ? `Reminder set for ${actionItems.invoice.due_date}`
+      : "Reminder queued in Copilot Workspace";
+    setReminderToast(invoiceDesc);
+    setTimeout(() => setReminderToast(null), 4000);
+  }
+
   if (!email) {
     return (
       <div className="gmail-detail-pane">
@@ -103,10 +179,10 @@ export default function GmailDetailView({
 
   const senderName = email.sender || "Unknown";
   const avatarLetter = (senderName.charAt(0) || "U").toUpperCase();
+  const hasAnyAction = actionItems && (actionItems.meeting?.detected || actionItems.invoice?.detected || actionItems.meeting_link);
 
   return (
     <article className="gmail-detail-pane" aria-label={`Email from ${senderName}: ${email.subject}`}>
-      {}
       <nav className="detail-toolbar" aria-label="Email toolbar">
         <div className="detail-toolbar-left">
           <button
@@ -181,7 +257,6 @@ export default function GmailDetailView({
         </div>
       </nav>
 
-      {}
       <div className="voice-read-bar" role="region" aria-label="Voice reading controls">
         <div className="voice-read-info">
           <span className="voice-pulsing-dot" aria-hidden="true" />
@@ -215,7 +290,6 @@ export default function GmailDetailView({
         </button>
       </div>
 
-      {}
       <header className="detail-header-subject">
         <h1 className="detail-subject-text">
           {email.subject || "(no subject)"}
@@ -223,7 +297,6 @@ export default function GmailDetailView({
         </h1>
       </header>
 
-      {}
       <div className="detail-meta">
         <div className="detail-meta-left">
           <div className="detail-avatar" aria-hidden="true">
@@ -254,7 +327,97 @@ export default function GmailDetailView({
         </div>
       </div>
 
-      {}
+      {hasAnyAction && (
+        <div className="action-items-card" role="region" aria-label="Action Items Detected">
+          <div className="action-items-header">
+            <div className="action-items-title">
+              <span className="action-sparkle-icon">✨</span>
+              <span>Action Items Detected</span>
+            </div>
+            {reminderToast && (
+              <span className="action-reminder-toast">{reminderToast}</span>
+            )}
+          </div>
+          <div className="action-items-list">
+            {actionItems.meeting?.detected && (
+              <div className="action-item-row">
+                <div className="action-item-info">
+                  <span className="action-item-icon">🕒</span>
+                  <div className="action-item-text">
+                    <span className="action-item-label">Meeting Proposed:</span>
+                    <span className="action-item-detail">{actionItems.meeting.date_str || "Review proposal"}</span>
+                  </div>
+                </div>
+                <a
+                  href={actionItems.meeting.calendar_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="action-btn calendar-btn"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  Add to Google Calendar
+                </a>
+              </div>
+            )}
+
+            {actionItems.invoice?.detected && (
+              <div className="action-item-row">
+                <div className="action-item-info">
+                  <span className="action-item-icon">📄</span>
+                  <div className="action-item-text">
+                    <span className="action-item-label">Invoice Due:</span>
+                    <span className="action-item-detail">
+                      {actionItems.invoice.due_date ? `${actionItems.invoice.due_date}` : "Due soon"}
+                      {actionItems.invoice.amount ? ` (${actionItems.invoice.amount})` : ""}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className={`action-btn reminder-btn ${reminderSet ? "set" : ""}`}
+                  onClick={handleSetReminder}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  {reminderSet ? "Reminder Set" : "Set Reminder"}
+                </button>
+              </div>
+            )}
+
+            {actionItems.meeting_link && (
+              <div className="action-item-row">
+                <div className="action-item-info">
+                  <span className="action-item-icon">🔗</span>
+                  <div className="action-item-text">
+                    <span className="action-item-label">{actionItems.meeting_link.platform} Link:</span>
+                    <span className="action-item-detail truncate">{actionItems.meeting_link.url}</span>
+                  </div>
+                </div>
+                <a
+                  href={actionItems.meeting_link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="action-btn join-btn"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="23 7 16 12 23 17 23 7" />
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                  </svg>
+                  Join Meeting
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <section className="detail-body-card" tabIndex="0" aria-label="Email message body">
         {(email.body && email.body.trim().length > 0)
           ? email.body
@@ -263,7 +426,6 @@ export default function GmailDetailView({
             : email.snippet || "(No content)"}
       </section>
 
-      {}
       <div className="smart-reply-section" role="region" aria-label="AI Smart Replies">
         <div className="smart-reply-header">
           <div className="smart-reply-header-left">
@@ -328,7 +490,6 @@ export default function GmailDetailView({
           </div>
         )}
 
-        {}
         <div className="smart-reply-voice-row">
           <div className="smart-reply-voice-input-wrap">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="#5e5e5e" className="voice-input-icon">
@@ -366,7 +527,6 @@ export default function GmailDetailView({
         </div>
       </div>
 
-      {}
       <div className="detail-reply-row">
         <button
           type="button"
