@@ -449,6 +449,31 @@
   white-space: nowrap;
 }
 
+.row-join-meeting-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #eef2ff;
+  border: 1px solid #c7d7fa;
+  color: #3b5bdb;
+  border-radius: 12px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 120ms ease;
+  margin-right: 4px;
+}
+
+.row-join-meeting-btn:hover {
+  background: #3b5bdb;
+  color: #ffffff;
+  border-color: #3b5bdb;
+  transform: translateY(-1px);
+}
+
 .email-row.unread .email-row-date {
   color: #374151;
   font-weight: 600;
