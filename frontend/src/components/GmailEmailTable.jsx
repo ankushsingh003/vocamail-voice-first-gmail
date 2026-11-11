@@ -57,6 +57,18 @@ export default function GmailEmailTable({
     return fromStr.split("@")[0];
   }
 
+  function getMeetingLink(email) {
+    if (email.meeting_link) return email.meeting_link;
+    const text = `${email.subject || ""} ${email.snippet || ""}`;
+    const zoom = text.match(/https:\/\/[\w.-]*zoom\.us\/(?:j\/|my\/|wc\/)[\w?=&.-]+/i);
+    if (zoom) return { platform: "Zoom", url: zoom[0] };
+    const meet = text.match(/https:\/\/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}/i);
+    if (meet) return { platform: "Meet", url: meet[0] };
+    const teams = text.match(/https:\/\/teams\.microsoft\.com\/l\/meetup-join\/[\w%?=&.-]+/i);
+    if (teams) return { platform: "Teams", url: teams[0] };
+    return null;
+  }
+
   const unreadCount = messages.filter((m) => m.is_unread).length;
   const folderLabel = currentFolder === "INBOX" ? "Inbox" : currentFolder.charAt(0) + currentFolder.slice(1).toLowerCase();
 
@@ -228,6 +240,7 @@ export default function GmailEmailTable({
           const isUnread = email.is_unread;
           const isStarred = email.is_starred;
           const isSelected = selectedIds.has(email.id);
+          const meetingLink = getMeetingLink(email);
 
           return (
             <div
@@ -271,6 +284,22 @@ export default function GmailEmailTable({
               </div>
 
               <div className="email-row-trailing">
+                {meetingLink && (
+                  <a
+                    href={meetingLink.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="row-join-meeting-btn"
+                    onClick={(e) => e.stopPropagation()}
+                    title={`Join ${meetingLink.platform} Meeting`}
+                  >
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="23 7 16 12 23 17 23 7" />
+                      <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                    </svg>
+                    <span>Join {meetingLink.platform}</span>
+                  </a>
+                )}
                 <span className="email-row-date">{formatDate(email.date)}</span>
                 <div className="email-row-actions">
                   <button type="button" className="row-action-btn" title="Archive" aria-label="Archive"
