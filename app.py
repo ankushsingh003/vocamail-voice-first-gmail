@@ -20,6 +20,7 @@ from gmail.reader import (
     narrate_inbox, narrate_email, get_help_text, narrate_search_results
 )
 from gmail.briefing import create_morning_briefing
+from core.action_detector import detect_all_action_items, extract_meeting_link
 from speech.transcribe import transcribe_audio
 from speech.tts import speak, cleanup_old_audio
 
@@ -156,6 +157,8 @@ def api_inbox():
         limit = request.args.get("limit", 50, type=int)
         label = request.args.get("label", "INBOX").upper()
         messages = list_inbox(creds, max_results=limit, label_ids=[label])
+        for m in messages:
+            m["meeting_link"] = extract_meeting_link(f"{m.get('subject', '')} {m.get('snippet', '')}")
         return jsonify({"ok": True, "messages": messages, "label": label})
     except Exception as e:
         logger.error(f"[VocaMail] api_inbox error: {e}")
@@ -168,9 +171,33 @@ def api_email_detail(msg_id):
     try:
         creds = get_credentials()
         detail = get_message(creds, msg_id)
+        if detail:
+            body_text = detail.get("body") or detail.get("snippet", "")
+            actions = detect_all_action_items(
+                subject=detail.get("subject", ""),
+                sender=detail.get("from") or detail.get("sender", ""),
+                body=body_text,
+            )
+            detail["actions"] = actions
+            detail["meeting_link"] = actions.get("meeting_link")
         return jsonify({"ok": True, "email": detail})
     except Exception as e:
         logger.error(f"[VocaMail] api_email_detail error: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/detect-actions", methods=["POST"])
+@login_required
+def api_detect_actions():
+    try:
+        data = request.get_json(silent=True) or {}
+        subject = data.get("subject", "").strip()
+        sender = data.get("sender", "").strip()
+        body = data.get("body", "").strip()
+        actions = detect_all_action_items(subject=subject, sender=sender, body=body)
+        return jsonify({"ok": True, "actions": actions})
+    except Exception as e:
+        logger.error(f"[VocaMail] api_detect_actions error: {e}")
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
@@ -269,6 +296,8 @@ def api_search():
             return jsonify({"ok": True, "messages": []})
         creds = get_credentials()
         results = search_messages(creds, query=query, max_results=limit)
+        for m in results:
+            m["meeting_link"] = extract_meeting_link(f"{m.get('subject', '')} {m.get('snippet', '')}")
         return jsonify({"ok": True, "messages": results, "query": query})
     except Exception as e:
         logger.error(f"[VocaMail] api_search error: {e}")
