@@ -486,6 +486,70 @@ def api_voice():
                 logger.error(f"[VocaMail] Mark as read error: {e}")
                 reply_text = f"Sorry, could not mark that email as read: {e}"
 
+        elif intent == "add_calendar":
+            email_index = params.get("email_index", 0)
+            try:
+                emails = list_inbox(creds)
+                if 0 <= email_index < len(emails):
+                    target_email = emails[email_index]
+                    detail = get_message(creds, target_email["id"])
+                    actions = detect_all_action_items(
+                        subject=detail.get("subject", ""),
+                        sender=detail.get("from") or detail.get("sender", ""),
+                        body=detail.get("body") or detail.get("snippet", "")
+                    )
+                    cal_url = actions.get("meeting", {}).get("calendar_url")
+                    extra_payload["calendar_url"] = cal_url
+                    reply_text = f"Opening Google Calendar for: {detail.get('subject')}."
+                else:
+                    reply_text = "I couldn't find that email to add to your calendar."
+            except Exception as e:
+                logger.error(f"[VocaMail] Add calendar error: {e}")
+                reply_text = f"Sorry, could not add that event to calendar: {e}"
+
+        elif intent == "join_meeting":
+            email_index = params.get("email_index", 0)
+            try:
+                emails = list_inbox(creds)
+                if 0 <= email_index < len(emails):
+                    target_email = emails[email_index]
+                    detail = get_message(creds, target_email["id"])
+                    link = extract_meeting_link(f"{detail.get('subject', '')} {detail.get('body', '')} {detail.get('snippet', '')}")
+                    if link and link.get("url"):
+                        extra_payload["meeting_url"] = link["url"]
+                        reply_text = f"Opening your {link.get('platform', 'meeting')} link now."
+                    else:
+                        reply_text = "No meeting link was found in that email."
+                else:
+                    reply_text = "I couldn't find that email."
+            except Exception as e:
+                logger.error(f"[VocaMail] Join meeting error: {e}")
+                reply_text = f"Sorry, could not open the meeting: {e}"
+
+        elif intent == "set_reminder":
+            email_index = params.get("email_index", 0)
+            try:
+                emails = list_inbox(creds)
+                if 0 <= email_index < len(emails):
+                    target_email = emails[email_index]
+                    detail = get_message(creds, target_email["id"])
+                    actions = detect_all_action_items(
+                        subject=detail.get("subject", ""),
+                        sender=detail.get("from") or detail.get("sender", ""),
+                        body=detail.get("body") or detail.get("snippet", "")
+                    )
+                    extra_payload["reminder_set"] = True
+                    inv = actions.get("invoice", {})
+                    if inv.get("detected"):
+                        reply_text = f"Reminder set for invoice due {inv.get('due_date', 'soon')}{(' for ' + inv['amount']) if inv.get('amount') else ''}."
+                    else:
+                        reply_text = f"Reminder queued for: {detail.get('subject')}."
+                else:
+                    reply_text = "I couldn't find that email to set a reminder."
+            except Exception as e:
+                logger.error(f"[VocaMail] Set reminder error: {e}")
+                reply_text = f"Sorry, could not set reminder: {e}"
+
         elif intent == "compose":
             recipient = params.get("recipient")
             subject = params.get("subject")
