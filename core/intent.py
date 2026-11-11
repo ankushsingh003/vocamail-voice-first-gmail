@@ -150,6 +150,39 @@ INTENT_PHRASES = {
         "morning podcast",
         "briefing",
     ],
+    "add_calendar": [
+        "add to calendar",
+        "add to my calendar",
+        "schedule meeting",
+        "schedule on calendar",
+        "add meeting to calendar",
+        "save to calendar",
+        "create calendar event",
+        "put on calendar",
+        "add this to calendar",
+    ],
+    "join_meeting": [
+        "join meeting",
+        "join the meeting",
+        "join zoom",
+        "join call",
+        "open zoom",
+        "open meet",
+        "open meeting",
+        "join google meet",
+        "join teams call",
+        "join conference",
+    ],
+    "set_reminder": [
+        "set reminder",
+        "set a reminder",
+        "remind me",
+        "remind me about this",
+        "remind me about invoice",
+        "set reminder for invoice",
+        "remind me later",
+        "create reminder",
+    ],
 }
 
 FUZZY_THRESHOLD = 65
@@ -171,7 +204,7 @@ def _extract_params(intent: str, transcript: str) -> dict:
     params = {}
     text = transcript.lower()
 
-    if intent in ("read_email", "archive", "trash", "mark_read"):
+    if intent in ("read_email", "archive", "trash", "mark_read", "add_calendar", "join_meeting", "set_reminder"):
         digit_match = re.search(r"\b(\d+)\b", text)
         if digit_match:
             params["email_index"] = int(digit_match.group(1)) - 1
