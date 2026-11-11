@@ -231,7 +231,23 @@ export default function App() {
       setIsNarratingEmail(false);
       return;
     }
-    const textToRead = `${email.subject || "No subject"}. From ${email.sender || "unknown"}. ${email.body || email.snippet || "Empty message"}`;
+    let actionAnnouncement = "";
+    if (email.actions) {
+      const items = [];
+      if (email.actions.meeting?.detected && email.actions.meeting.date_str) {
+        items.push(`Meeting proposed for ${email.actions.meeting.date_str}`);
+      }
+      if (email.actions.invoice?.detected) {
+        items.push(`Invoice due ${email.actions.invoice.due_date || "soon"}${email.actions.invoice.amount ? ` for ${email.actions.invoice.amount}` : ""}`);
+      }
+      if (email.actions.meeting_link) {
+        items.push(`${email.actions.meeting_link.platform} link detected`);
+      }
+      if (items.length > 0) {
+        actionAnnouncement = ` Action items: ${items.join(". ")}. `;
+      }
+    }
+    const textToRead = `${email.subject || "No subject"}. From ${email.sender || "unknown"}.${actionAnnouncement} ${email.body || email.snippet || "Empty message"}`;
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(textToRead);
@@ -309,6 +325,14 @@ export default function App() {
       if (data.briefing_data) {
         setBriefingData(data.briefing_data);
         setIsBriefingOpen(true);
+      }
+
+      if (data.calendar_url) {
+        window.open(data.calendar_url, "_blank");
+      }
+
+      if (data.meeting_url) {
+        window.open(data.meeting_url, "_blank");
       }
 
       if (data.audio_url && audioRef.current && !data.briefing_data) {
