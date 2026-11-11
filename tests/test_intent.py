@@ -62,6 +62,24 @@ class TestIntentDetection(unittest.TestCase):
         self.assertEqual(res["intent"], "mark_read")
         self.assertEqual(res["params"]["email_index"], 0)
 
+    def test_add_calendar_command(self):
+        for phrase in ["add to calendar", "add meeting to calendar", "put on calendar"]:
+            with self.subTest(phrase=phrase):
+                res = detect_intent(phrase)
+                self.assertEqual(res["intent"], "add_calendar")
+
+    def test_join_meeting_command(self):
+        for phrase in ["join meeting", "join zoom", "open zoom", "join call"]:
+            with self.subTest(phrase=phrase):
+                res = detect_intent(phrase)
+                self.assertEqual(res["intent"], "join_meeting")
+
+    def test_set_reminder_command(self):
+        for phrase in ["set reminder", "set a reminder", "remind me about invoice"]:
+            with self.subTest(phrase=phrase):
+                res = detect_intent(phrase)
+                self.assertEqual(res["intent"], "set_reminder")
+
     def test_confirmation_words(self):
         for word in ["yes", "send it", "confirm"]:
             with self.subTest(word=word):
