@@ -458,6 +458,168 @@
   gap: 12px;
 }
 
+.action-items-card {
+  margin: 0 24px 16px 24px;
+  background: linear-gradient(120deg, #f0f4ff 0%, #fdf4ff 100%);
+  border: 1px solid #c7d7fa;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(79, 120, 232, 0.08);
+}
+
+.action-items-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.7);
+  border-bottom: 1px solid #e0e7ff;
+}
+
+.action-items-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #3b5bdb;
+  letter-spacing: -0.2px;
+}
+
+.action-sparkle-icon {
+  font-size: 14px;
+}
+
+.action-reminder-toast {
+  font-size: 11px;
+  color: #15803d;
+  background: #dcfce7;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  animation: fadeIn 200ms ease;
+}
+
+.action-items-list {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 14px;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.action-item-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.action-item-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.action-item-icon {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.action-item-text {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.action-item-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+.action-item-detail {
+  font-size: 12.5px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.action-item-detail.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 150ms ease;
+}
+
+.calendar-btn {
+  background: #3b5bdb;
+  color: #ffffff;
+  border: none;
+}
+
+.calendar-btn:hover {
+  background: #3048b0;
+  box-shadow: 0 2px 6px rgba(59, 91, 219, 0.3);
+}
+
+.reminder-btn {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.reminder-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.reminder-btn.set {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #86efac;
+}
+
+.join-btn {
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+}
+
+.join-btn:hover {
+  background: #0369a1;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+}
+
 .quick-reply-btn {
   display: inline-flex;
   align-items: center;
