@@ -17,10 +17,11 @@ from gmail.client import (
     toggle_star, get_message
 )
 from gmail.reader import (
-    narrate_inbox, narrate_email, get_help_text, narrate_search_results
+    narrate_inbox, narrate_email, get_help_text, narrate_search_results, narrate_rag_answer
 )
 from gmail.briefing import create_morning_briefing
 from core.action_detector import detect_all_action_items, extract_meeting_link
+from core.rag_search import is_conversational_query, expand_search_query, synthesize_inbox_rag
 from speech.transcribe import transcribe_audio
 from speech.tts import speak, cleanup_old_audio
 
@@ -304,6 +305,53 @@ def api_search():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+@app.route("/api/rag-search", methods=["POST"])
+@login_required
+def api_rag_search():
+    try:
+        data = request.get_json(silent=True) or {}
+        query = data.get("query", "").strip()
+        if not query:
+            return jsonify({"ok": False, "error": "Query required"}), 400
+
+        creds = get_credentials()
+
+        is_question = is_conversational_query(query)
+
+        expanded = expand_search_query(query) if is_question else query
+        candidates = search_messages(creds, query=expanded, max_results=8)
+        if not candidates and is_question:
+            fallback_q = " ".join(w for w in query.split() if len(w) > 3)
+            candidates = search_messages(creds, query=fallback_q, max_results=6)
+
+        for m in candidates:
+            m["meeting_link"] = extract_meeting_link(f"{m.get('subject', '')} {m.get('snippet', '')}")
+
+        if is_question:
+            rag_result = synthesize_inbox_rag(query, candidates)
+            return jsonify({
+                "ok": True,
+                "is_question": True,
+                "has_answer": rag_result["has_answer"],
+                "answer": rag_result["answer"],
+                "citation": rag_result["citation"],
+                "source_text": rag_result["source_text"],
+                "messages": candidates,
+                "query": query,
+                "expanded_query": expanded,
+            })
+
+        return jsonify({
+            "ok": True,
+            "is_question": False,
+            "messages": candidates,
+            "query": query,
+        })
+    except Exception as e:
+        logger.error(f"[VocaMail] api_rag_search error: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route("/api/briefing", methods=["GET", "POST"])
 @login_required
 def api_briefing():
@@ -443,6 +491,10 @@ def api_voice():
         elif intent == "search":
             query = params.get("query", "").strip()
             reply_text = narrate_search_results(creds, query)
+
+        elif intent == "inbox_question":
+            question = params.get("query", "").strip()
+            reply_text = narrate_rag_answer(creds, question)
 
         elif intent == "archive":
             email_index = params.get("email_index", 0)
@@ -783,21 +835,25 @@ COPILOT_GREETINGS = re.compile(
 
 
 def matches_inbox_context(query: str, emails: list) -> bool:
-    q_words = set(re.findall(r"\b[a-zA-Z0-9_-]{3,}\b", query.lower()))
+    words_in_query = query.strip().split()
+    if len(words_in_query) < 3:
+        return False
+    q_words = set(re.findall(r"\b[a-zA-Z0-9_-]{4,}\b", query.lower()))
     stopwords = {
         "the", "and", "for", "com", "org", "net", "you", "your", "with",
         "from", "this", "that", "what", "have", "are", "can", "will", "did",
         "has", "any", "about", "there", "some", "tell", "show", "give"
     }
     q_clean = q_words - stopwords
-    if not q_clean:
+    if len(q_clean) < 2:
         return False
     for em in emails:
         sender = (em.get("from") or em.get("sender") or "").lower()
         subject = (em.get("subject") or "").lower()
-        sender_words = set(re.findall(r"\b[a-zA-Z0-9_-]{3,}\b", sender)) - stopwords
-        subject_words = set(re.findall(r"\b[a-zA-Z0-9_-]{3,}\b", subject)) - stopwords
-        if q_clean & (sender_words | subject_words):
+        sender_words = set(re.findall(r"\b[a-zA-Z0-9_-]{4,}\b", sender)) - stopwords
+        subject_words = set(re.findall(r"\b[a-zA-Z0-9_-]{4,}\b", subject)) - stopwords
+        overlap = q_clean & (sender_words | subject_words)
+        if len(overlap) >= 2:
             return True
     return False
 
@@ -915,6 +971,8 @@ def api_copilot_chat():
             else:
                 fallback_msg = "No urgent or high-priority emails flagged in your recent inbox."
         else:
+            if not EMAIL_DOMAIN_KEYWORDS.search(query):
+                return jsonify({"ok": True, "answer": COPILOT_OUT_OF_SCOPE_MSG, "out_of_domain": True})
             fallback_msg = f"I reviewed your inbox ({len(emails)} recent emails). Let me know if you'd like me to summarize unread mail, search, or draft a reply."
         return jsonify({"ok": True, "answer": fallback_msg, "fallback": True})
 
