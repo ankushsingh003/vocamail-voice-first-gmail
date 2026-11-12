@@ -41,6 +41,28 @@ function detectClientActionItems(email) {
   };
 }
 
+function cleanPlainTextBody(rawText) {
+  if (!rawText) return "";
+  const text = rawText
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/\u00a0|&nbsp;/g, " ");
+  const lines = text.split(/\r?\n/).map((l) => l.trimEnd());
+  const cleanedLines = [];
+  let prevBlank = false;
+  for (const line of lines) {
+    if (!line.trim()) {
+      if (!prevBlank && cleanedLines.length > 0) {
+        cleanedLines.push("");
+        prevBlank = true;
+      }
+    } else {
+      cleanedLines.push(line);
+      prevBlank = false;
+    }
+  }
+  return cleanedLines.join("\n").trim();
+}
+
 export default function GmailDetailView({
   email,
   onBack,
@@ -63,6 +85,11 @@ export default function GmailDetailView({
   const [actionItems, setActionItems] = useState(null);
   const [reminderSet, setReminderSet] = useState(false);
   const [reminderToast, setReminderToast] = useState(null);
+  const [viewMode, setViewMode] = useState("rich");
+
+  useEffect(() => {
+    setViewMode(email?.body_html ? "rich" : "plain");
+  }, [email?.id, email?.body_html]);
 
   useEffect(() => {
     setSmartReplies(null);
@@ -418,13 +445,65 @@ export default function GmailDetailView({
         </div>
       )}
 
-      <section className="detail-body-card" tabIndex="0" aria-label="Email message body">
-        {(email.body && email.body.trim().length > 0)
-          ? email.body
-          : (email.body_preview && email.body_preview.trim().length > 0)
-            ? email.body_preview
-            : email.snippet || "(No content)"}
-      </section>
+      {email.body_html && (
+        <div className="detail-view-toggle-bar">
+          <button
+            type="button"
+            className={`detail-view-toggle-btn ${viewMode === "rich" ? "active" : ""}`}
+            onClick={() => setViewMode("rich")}
+            aria-label="View formatted email"
+          >
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+              <path d="M3 3v18h18V3H3zm16 16H5V5h14v14zM11 7h2v10h-2V7zM7 11h10v2H7v-2z" />
+            </svg>
+            Formatted View
+          </button>
+          <button
+            type="button"
+            className={`detail-view-toggle-btn ${viewMode === "plain" ? "active" : ""}`}
+            onClick={() => setViewMode("plain")}
+            aria-label="View plain text email"
+          >
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+              <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+            </svg>
+            Plain Text
+          </button>
+        </div>
+      )}
+
+      {viewMode === "rich" && email.body_html ? (
+        <div className="detail-html-wrap">
+          <iframe
+            title="Formatted email content"
+            className="detail-html-frame"
+            sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
+            srcDoc={`<!DOCTYPE html><html><head><base target="_blank"><meta charset="utf-8"><style>html,body{margin:0;padding:16px 20px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:#1f1f1f;background:#ffffff;word-break:break-word;}img{max-width:100%!important;height:auto!important;}table{max-width:100%!important;}</style></head><body>${email.body_html}</body></html>`}
+            onLoad={(e) => {
+              try {
+                const frame = e.target;
+                if (frame && frame.contentWindow && frame.contentWindow.document) {
+                  const doc = frame.contentWindow.document;
+                  const h = Math.max(doc.body?.scrollHeight || 0, doc.documentElement?.scrollHeight || 0);
+                  if (h > 0) {
+                    frame.style.height = `${h + 30}px`;
+                  }
+                }
+              } catch (err) {}
+            }}
+          />
+        </div>
+      ) : (
+        <section className="detail-body-card" tabIndex="0" aria-label="Email message body">
+          {cleanPlainTextBody(
+            (email.body && email.body.trim().length > 0)
+              ? email.body
+              : (email.body_preview && email.body_preview.trim().length > 0)
+                ? email.body_preview
+                : email.snippet || "(No content)"
+          )}
+        </section>
+      )}
 
       <div className="smart-reply-section" role="region" aria-label="AI Smart Replies">
         <div className="smart-reply-header">
