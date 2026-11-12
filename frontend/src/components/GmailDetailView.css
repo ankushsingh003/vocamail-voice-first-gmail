@@ -259,8 +259,9 @@
   border: 1px solid #e8eaed;
   border-radius: 10px;
   background: #ffffff;
-  min-height: 320px;
+  min-height: 60px;
   display: block;
+  overflow: hidden;
 }
 
 .detail-body-card {

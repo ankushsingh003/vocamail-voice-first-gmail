@@ -478,15 +478,26 @@ export default function GmailDetailView({
             title="Formatted email content"
             className="detail-html-frame"
             sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
-            srcDoc={`<!DOCTYPE html><html><head><base target="_blank"><meta charset="utf-8"><style>html,body{margin:0;padding:16px 20px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:#1f1f1f;background:#ffffff;word-break:break-word;}img{max-width:100%!important;height:auto!important;}table{max-width:100%!important;}</style></head><body>${email.body_html}</body></html>`}
+            srcDoc={`<!DOCTYPE html><html><head><base target="_blank"><meta charset="utf-8"><style>html,body{margin:0;padding:12px 20px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:#1f1f1f;background:#ffffff;word-break:break-word;}img{max-width:100%!important;height:auto!important;}table{max-width:100%!important;}div[style*="height"],td[height],div[style*="font-size:0"],div[style*="font-size: 0"]{max-height:8px!important;overflow:hidden!important;}br+br{display:none;}p:empty,div:empty,span:empty{display:none!important;}</style></head><body>${email.body_html}</body></html>`}
             onLoad={(e) => {
               try {
                 const frame = e.target;
                 if (frame && frame.contentWindow && frame.contentWindow.document) {
                   const doc = frame.contentWindow.document;
+                  const allEls = doc.querySelectorAll("*");
+                  allEls.forEach((el) => {
+                    const st = el.getAttribute("style") || "";
+                    if (/font-size\s*:\s*0/.test(st) || /line-height\s*:\s*0/.test(st)) {
+                      el.style.display = "none";
+                    }
+                    const h = el.getAttribute("height");
+                    if (h && parseInt(h) > 20 && !el.textContent.trim() && el.children.length === 0) {
+                      el.style.display = "none";
+                    }
+                  });
                   const h = Math.max(doc.body?.scrollHeight || 0, doc.documentElement?.scrollHeight || 0);
                   if (h > 0) {
-                    frame.style.height = `${h + 30}px`;
+                    frame.style.height = `${Math.min(h + 20, 2400)}px`;
                   }
                 }
               } catch (err) {}
