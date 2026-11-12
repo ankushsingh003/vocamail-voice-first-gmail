@@ -747,6 +747,61 @@ def api_ai_draft_reply():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+COPILOT_OUT_OF_SCOPE_MSG = (
+    "I am your VocaMail assistant, specialized strictly in managing your Gmail inbox, "
+    "summarizing emails, and drafting replies. Please ask an email-related question "
+    "(such as 'Summarize my unread mail' or 'Do I have any urgent emails?')."
+)
+
+COPILOT_GREETING_MSG = (
+    "Hello! I am your VocaMail Copilot. I can help you summarize unread emails, "
+    "check for urgent messages, track calendar invites and invoices, or draft replies. "
+    "What would you like to check in your inbox?"
+)
+
+EMAIL_DOMAIN_KEYWORDS = re.compile(
+    r"\b("
+    r"email|emails|mail|mails|gmail|inbox|message|messages|thread|threads|"
+    r"draft|drafts|sender|senders|recipient|recipients|subject|subjects|"
+    r"unread|read|starred|star|important|urgent|priority|flagged|flag|spam|trash|archive|"
+    r"summarize|summary|summaries|briefing|overview|"
+    r"reply|replies|respond|response|compose|"
+    r"meeting|meetings|zoom|meet|teams|calendar|schedule|scheduled|"
+    r"invoice|invoices|receipt|receipts|bill|bills|reminder|reminders|deadline|deadlines|action\s*items?|"
+    r"newsletter|newsletters|attachment|attachments|"
+    r"who\s+emailed|who\s+sent|who\s+wrote|did\s+\w+\s+write|did\s+\w+\s+send|heard?\s+from|reach\s+out|reached\s+out|"
+    r"check\s+(my\s+)?(inbox|mail|emails?)|read\s+(my\s+)?(inbox|mail|emails?)|clean\s+(my\s+)?(inbox|mail)|"
+    r"search|find|latest\s+(emails?|mail|messages?)|today('s)?\s+(emails?|mail|messages?)"
+    r")\b",
+    re.IGNORECASE
+)
+
+COPILOT_GREETINGS = re.compile(
+    r"^(hi|hello|hey|greetings|help|howdy|good\s+(morning|afternoon|evening))\b",
+    re.IGNORECASE
+)
+
+
+def matches_inbox_context(query: str, emails: list) -> bool:
+    q_words = set(re.findall(r"\b[a-zA-Z0-9_-]{3,}\b", query.lower()))
+    stopwords = {
+        "the", "and", "for", "com", "org", "net", "you", "your", "with",
+        "from", "this", "that", "what", "have", "are", "can", "will", "did",
+        "has", "any", "about", "there", "some", "tell", "show", "give"
+    }
+    q_clean = q_words - stopwords
+    if not q_clean:
+        return False
+    for em in emails:
+        sender = (em.get("from") or em.get("sender") or "").lower()
+        subject = (em.get("subject") or "").lower()
+        sender_words = set(re.findall(r"\b[a-zA-Z0-9_-]{3,}\b", sender)) - stopwords
+        subject_words = set(re.findall(r"\b[a-zA-Z0-9_-]{3,}\b", subject)) - stopwords
+        if q_clean & (sender_words | subject_words):
+            return True
+    return False
+
+
 @app.route("/api/copilot/chat", methods=["POST"])
 @login_required
 def api_copilot_chat():
@@ -756,11 +811,24 @@ def api_copilot_chat():
     if not query:
         return jsonify({"ok": False, "error": "Query required"}), 400
 
+    if COPILOT_GREETINGS.search(query):
+        return jsonify({"ok": True, "answer": COPILOT_GREETING_MSG})
+
     try:
         emails = list_inbox(creds, max_results=10)
     except Exception as e:
         logger.warning(f"[Copilot] Failed to fetch emails for chat context: {e}")
         emails = []
+
+    is_email_domain = bool(
+        EMAIL_DOMAIN_KEYWORDS.search(query) or matches_inbox_context(query, emails)
+    )
+    if not is_email_domain:
+        return jsonify({
+            "ok": True,
+            "answer": COPILOT_OUT_OF_SCOPE_MSG,
+            "out_of_domain": True
+        })
 
     email_summaries = []
     for i, em in enumerate(emails[:8], 1):
@@ -781,11 +849,13 @@ def api_copilot_chat():
                 {
                     "role": "system",
                     "content": (
-                        "You are VocaMail Copilot, a senior personal AI email assistant. "
-                        "You have direct access to the user's latest inbox emails provided in the context. "
-                        "Provide a concise, helpful, friendly answer in 2-4 sentences max. "
-                        "Highlight names, urgent items, or actions clearly. "
-                        "Do not use markdown headers; keep formatting clean and compact."
+                        "You are VocaMail Copilot, an AI assistant strictly and exclusively dedicated to Gmail and email management.\n"
+                        "STRICT DOMAIN CONSTRAINTS:\n"
+                        "1. You only answer questions regarding the user's emails, inbox, unread mail, senders, drafts, replies, and email action items (meetings, calendar events, invoices, deadlines).\n"
+                        "2. If the user input is gibberish or unrelated to email/Gmail, you must strictly refuse by outputting:\n"
+                        f"'{COPILOT_OUT_OF_SCOPE_MSG}'\n"
+                        "3. Provide a concise, helpful, friendly answer in 2-4 sentences max.\n"
+                        "4. Do not use markdown headers; keep formatting compact."
                     ),
                 },
                 {
@@ -801,12 +871,49 @@ def api_copilot_chat():
     except Exception as e:
         logger.error(f"[Copilot] Chat error: {e}")
         unread_emails = [em for em in emails if em.get("is_unread")]
-        if "summarize" in query.lower() or "unread" in query.lower():
+        q_lower = query.lower()
+        if "summarize" in q_lower or "unread" in q_lower or "briefing" in q_lower:
             if unread_emails:
-                summary_lines = [f"• {em.get('from', 'Unknown').split('<')[0].strip()}: \"{em.get('subject', 'No subject')}\"" for em in unread_emails[:3]]
-                fallback_msg = f"You have {len(unread_emails)} unread email{'s' if len(unread_emails) > 1 else ''}:\n" + "\n".join(summary_lines)
+                summary_lines = [
+                    f"• {em.get('from', 'Unknown').split('<')[0].strip()}: \"{em.get('subject', 'No subject')}\""
+                    for em in unread_emails[:3]
+                ]
+                fallback_msg = (
+                    f"You have {len(unread_emails)} unread email{'s' if len(unread_emails) > 1 else ''}:\n"
+                    + "\n".join(summary_lines)
+                )
             else:
                 fallback_msg = "You have no unread emails right now! Your inbox is up to date."
+        elif "meeting" in q_lower or "zoom" in q_lower or "calendar" in q_lower or "meet" in q_lower:
+            meeting_matches = [
+                em for em in emails
+                if any(k in (em.get("subject", "") + " " + em.get("snippet", "")).lower() for k in ["meeting", "zoom", "meet", "calendar", "schedule", "interview"])
+            ]
+            if meeting_matches:
+                items = [f"• {em.get('subject', 'Meeting')} from {em.get('from', 'Unknown').split('<')[0].strip()}" for em in meeting_matches[:2]]
+                fallback_msg = "Found meeting or calendar items in your recent mail:\n" + "\n".join(items)
+            else:
+                fallback_msg = "No upcoming meetings or Zoom links detected in your recent emails."
+        elif "invoice" in q_lower or "bill" in q_lower or "receipt" in q_lower:
+            invoice_matches = [
+                em for em in emails
+                if any(k in (em.get("subject", "") + " " + em.get("snippet", "")).lower() for k in ["invoice", "receipt", "bill", "due", "payment", "$"])
+            ]
+            if invoice_matches:
+                items = [f"• {em.get('subject', 'Invoice')} from {em.get('from', 'Unknown').split('<')[0].strip()}" for em in invoice_matches[:2]]
+                fallback_msg = "Found invoice/payment items in your recent mail:\n" + "\n".join(items)
+            else:
+                fallback_msg = "No pending invoices or receipts found in your recent emails."
+        elif "urgent" in q_lower or "important" in q_lower or "priority" in q_lower:
+            urgent_matches = [
+                em for em in emails
+                if any(k in (em.get("subject", "") + " " + em.get("snippet", "")).lower() for k in ["urgent", "important", "asap", "action required", "priority"])
+            ]
+            if urgent_matches:
+                items = [f"• {em.get('subject', 'Urgent email')} from {em.get('from', 'Unknown').split('<')[0].strip()}" for em in urgent_matches[:2]]
+                fallback_msg = "Found urgent items in your inbox:\n" + "\n".join(items)
+            else:
+                fallback_msg = "No urgent or high-priority emails flagged in your recent inbox."
         else:
             fallback_msg = f"I reviewed your inbox ({len(emails)} recent emails). Let me know if you'd like me to summarize unread mail, search, or draft a reply."
         return jsonify({"ok": True, "answer": fallback_msg, "fallback": True})
