@@ -2,6 +2,7 @@ import logging
 from gmail.client import list_inbox, search_messages
 from google.oauth2.credentials import Credentials
 from core.action_detector import detect_all_action_items
+from core.rag_search import is_conversational_query, expand_search_query, synthesize_inbox_rag
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +114,39 @@ def narrate_search_results(creds: Credentials, query: str) -> str:
         lines.append(_format_email_line(email, i))
 
     return " ".join(lines)
+
+
+def narrate_rag_answer(creds: Credentials, query: str) -> str:
+    if not query:
+        return "What would you like to know from your inbox?"
+
+    if not is_conversational_query(query):
+        return narrate_search_results(creds, query)
+
+    try:
+        expanded = expand_search_query(query)
+        candidates = search_messages(creds, query=expanded, max_results=6)
+        if not candidates:
+            fallback_q = " ".join(w for w in query.split() if len(w) > 3)
+            candidates = search_messages(creds, query=fallback_q, max_results=4)
+    except Exception as e:
+        logger.error(f"[VocaMail] RAG search error: {e}")
+        return f"Sorry, I could not search your inbox for that question. Please try again."
+
+    result = synthesize_inbox_rag(query, candidates)
+
+    if not result.get("has_answer"):
+        return "I searched your inbox but could not find a specific answer to that question."
+
+    answer = result.get("answer", "")
+    citation = result.get("citation")
+    if citation and "source" not in answer.lower():
+        subj = citation.get("subject", "")
+        date = citation.get("date", "")
+        if subj and date:
+            answer += f" Source: {subj}, {date}."
+
+    return answer
 
 
 def get_help_text() -> str:
