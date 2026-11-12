@@ -183,6 +183,26 @@ INTENT_PHRASES = {
         "remind me later",
         "create reminder",
     ],
+    "inbox_question": [
+        "what was the flight number",
+        "who emailed me about",
+        "what did they say about",
+        "when is the deadline",
+        "what is the tracking number",
+        "find out what",
+        "tell me about my",
+        "check if I have",
+        "what hotel did",
+        "what time is my",
+        "who sent me the",
+        "did anyone email me about",
+        "what is my booking",
+        "what confirmation code",
+        "what is my reservation",
+        "find the email about",
+        "look up the email",
+        "search my inbox for",
+    ],
 }
 
 FUZZY_THRESHOLD = 65
@@ -225,6 +245,9 @@ def _extract_params(intent: str, transcript: str) -> dict:
             flags=re.IGNORECASE,
         ).strip()
         params["query"] = query or text
+
+    elif intent == "inbox_question":
+        params["query"] = transcript.strip()
 
     elif intent == "compose":
         email_match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", transcript)
