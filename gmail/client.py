@@ -21,23 +21,63 @@ def _get_header(headers: list[dict], name: str) -> str:
     return ""
 
 
+def _clean_email_text(text: str) -> str:
+    if not text:
+        return ""
+    text = re.sub(r"[\u200B-\u200D\uFEFF]", "", text)
+    text = text.replace("\u00a0", " ").replace("&nbsp;", " ")
+    lines = [line.rstrip() for line in text.splitlines()]
+    cleaned_lines = []
+    prev_blank = False
+    for line in lines:
+        if not line.strip():
+            if not prev_blank and cleaned_lines:
+                cleaned_lines.append("")
+                prev_blank = True
+        else:
+            cleaned_lines.append(line)
+            prev_blank = False
+    return "\n".join(cleaned_lines).strip()
+
+
+def _extract_body_parts(payload: dict) -> tuple[str, str]:
+    plain_text = ""
+    html_text = ""
+
+    def _walk(part: dict):
+        nonlocal plain_text, html_text
+        mime = part.get("mimeType", "")
+        data = part.get("body", {}).get("data", "")
+        if data:
+            try:
+                decoded = base64.urlsafe_b64decode(data).decode("utf-8", errors="replace")
+                if mime == "text/plain" and not plain_text:
+                    plain_text = decoded
+                elif mime == "text/html" and not html_text:
+                    html_text = decoded
+            except Exception:
+                pass
+        for subpart in part.get("parts", []):
+            _walk(subpart)
+
+    _walk(payload)
+
+    if not plain_text and html_text:
+        try:
+            soup = BeautifulSoup(html_text, "html.parser")
+            for tag in soup(["script", "style", "meta", "noscript"]):
+                tag.decompose()
+            plain_text = soup.get_text(separator="\n")
+        except Exception:
+            plain_text = html_text
+
+    plain_text = _clean_email_text(plain_text)
+    return plain_text, html_text
+
+
 def _decode_body(payload: dict) -> str:
-    mime_type = payload.get("mimeType", "")
-    body_data = payload.get("body", {}).get("data", "")
-
-    if mime_type == "text/plain" and body_data:
-        return base64.urlsafe_b64decode(body_data).decode("utf-8", errors="replace")
-
-    if mime_type == "text/html" and body_data:
-        html = base64.urlsafe_b64decode(body_data).decode("utf-8", errors="replace")
-        return BeautifulSoup(html, "html.parser").get_text(separator=" ")
-
-    for part in payload.get("parts", []):
-        result = _decode_body(part)
-        if result:
-            return result
-
-    return ""
+    plain_text, _ = _extract_body_parts(payload)
+    return plain_text
 
 
 def _summarise_body(text: str, max_chars: int = 300) -> str:
@@ -81,7 +121,7 @@ def list_inbox(creds: Credentials, max_results: int = None, label_ids: list[str]
             headers = msg.get("payload", {}).get("headers", [])
             msg_labels = msg.get("labelIds", [])
 
-            body_text = _decode_body(msg.get("payload", {}))
+            body_text, body_html = _extract_body_parts(msg.get("payload", {}))
             body_preview = _summarise_body(body_text)
 
             inbox.append(
@@ -96,6 +136,7 @@ def list_inbox(creds: Credentials, max_results: int = None, label_ids: list[str]
                     "is_unread": "UNREAD" in msg_labels,
                     "is_starred": "STARRED" in msg_labels,
                     "body": body_text,
+                    "body_html": body_html,
                     "body_preview": body_preview,
                     "labels": msg_labels,
                 }
@@ -264,7 +305,7 @@ def get_message(creds: Credentials, msg_id: str) -> dict:
         msg = service.users().messages().get(userId="me", id=msg_id, format="full").execute()
         headers = msg.get("payload", {}).get("headers", [])
         msg_labels = msg.get("labelIds", [])
-        body_text = _decode_body(msg.get("payload", {}))
+        body_text, body_html = _extract_body_parts(msg.get("payload", {}))
 
         return {
             "id": msg["id"],
@@ -277,6 +318,7 @@ def get_message(creds: Credentials, msg_id: str) -> dict:
             "is_unread": "UNREAD" in msg_labels,
             "is_starred": "STARRED" in msg_labels,
             "body": body_text,
+            "body_html": body_html,
             "labels": msg_labels,
         }
     except Exception as e:
