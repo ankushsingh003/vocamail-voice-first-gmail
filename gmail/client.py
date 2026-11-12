@@ -229,6 +229,7 @@ def search_messages(creds: Credentials, query: str, max_results: int = 5) -> lis
                     "snippet": msg.get("snippet", ""),
                     "date": _get_header(headers, "Date"),
                     "is_unread": "UNREAD" in label_ids,
+                    "body": body_text,
                     "body_preview": _summarise_body(body_text),
                 }
             )
