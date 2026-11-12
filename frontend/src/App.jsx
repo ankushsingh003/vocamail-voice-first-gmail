@@ -8,6 +8,7 @@ import BriefingModal from "./components/BriefingModal";
 import SettingsModal from "./components/SettingsModal";
 import LoginCard from "./components/LoginCard";
 import CopilotPanel from "./components/CopilotPanel";
+import InboxAnswerCard from "./components/InboxAnswerCard";
 
 import { startRecording, stopRecording } from "./utils/audioRecorder";
 
@@ -24,6 +25,9 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedEmail, setSelectedEmail] = useState(null);
   const [isNarratingEmail, setIsNarratingEmail] = useState(false);
+
+  const [ragAnswer, setRagAnswer] = useState(null);
+  const [isRagLoading, setIsRagLoading] = useState(false);
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
@@ -84,7 +88,30 @@ export default function App() {
 
   const loadEmails = useCallback(async (folder = activeFolder, query = "") => {
     setIsLoadingEmails(true);
+    setRagAnswer(null);
     try {
+      if (query.trim()) {
+        const ragRes = await fetch("/api/rag-search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: query.trim() }),
+        });
+        if (ragRes.ok) {
+          const ragData = await ragRes.json();
+          if (ragData.ok) {
+            setEmails(ragData.messages || []);
+            if (ragData.is_question && ragData.has_answer) {
+              setRagAnswer({
+                answer: ragData.answer,
+                citation: ragData.citation,
+                query: query.trim(),
+              });
+            }
+            setIsLoadingEmails(false);
+            return;
+          }
+        }
+      }
       let url = `/api/inbox?limit=50&label=${encodeURIComponent(folder)}`;
       if (query.trim()) {
         url = `/api/search?q=${encodeURIComponent(query.trim())}`;
@@ -428,18 +455,32 @@ export default function App() {
               isNarrating={isNarratingEmail}
             />
           ) : (
-            <GmailEmailTable
-              messages={emails}
-              isLoading={isLoadingEmails}
-              onOpenEmail={handleOpenEmail}
-              onRefresh={() => loadEmails(activeFolder, searchQuery)}
-              onArchive={handleArchiveEmail}
-              onTrash={handleTrashEmail}
-              onMarkRead={handleMarkRead}
-              onToggleStar={handleToggleStar}
-              onOpenBriefing={handleOpenBriefing}
-              currentFolder={activeFolder}
-            />
+            <>
+              {ragAnswer && (
+                <InboxAnswerCard
+                  answer={ragAnswer.answer}
+                  citation={ragAnswer.citation}
+                  query={ragAnswer.query}
+                  onOpenEmail={(emailRef) => {
+                    handleOpenEmail(emailRef);
+                    setSelectedEmail(null);
+                  }}
+                  onDismiss={() => setRagAnswer(null)}
+                />
+              )}
+              <GmailEmailTable
+                messages={emails}
+                isLoading={isLoadingEmails}
+                onOpenEmail={handleOpenEmail}
+                onRefresh={() => loadEmails(activeFolder, searchQuery)}
+                onArchive={handleArchiveEmail}
+                onTrash={handleTrashEmail}
+                onMarkRead={handleMarkRead}
+                onToggleStar={handleToggleStar}
+                onOpenBriefing={handleOpenBriefing}
+                currentFolder={activeFolder}
+              />
+            </>
           )}
         </main>
 
